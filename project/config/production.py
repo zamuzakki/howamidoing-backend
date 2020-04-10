@@ -1,4 +1,3 @@
-import os
 from decouple import config
 from .common import Common
 
