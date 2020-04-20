@@ -25,19 +25,23 @@ def status_score_km_grid(
     error_allowed : float 
     estimated_responden : float
 
-    return :: status km_grid red / yellow / green
-    return type :: string
+    ::return :: status km_grid 
+    0: green status
+    1: yellow status
+    2: red status
+    
+    return type :: integer
     """
     number_of_sample = user_report_green + user_report_yellow + user_report_red
     
     if population <= 0:
-        return 'green'
+        return 0
 
     if number_of_sample < population * error_allowed:
-        return 'green'
+        return 0
 
     if not user_report_yellow and not user_report_red:
-        return 'green'
+        return 0
 
     score = (1 / population) * \
             ((5 * user_report_red) + (2 * user_report_yellow) - user_report_green)
@@ -49,8 +53,8 @@ def status_score_km_grid(
     setpoint_red_zone = (1 / 3) * (max_score_estimated - min_score_estimated)
 
     if score < setpoint_red_zone:
-        status_score = 'yellow'
+        status_score = 1
     else:
-        status_score = 'red'
+        status_score = 2
    
     return status_score
