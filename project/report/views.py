@@ -1,7 +1,8 @@
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .models import Status, Report
-from .serializers import StatusSerializer, ReportSerializer
+from .permissions import IsAdminOrOwnerOrReadOnly
+from .serializers import StatusSerializer, ReportSerializer, ReportCreateUpdateSerializer
 
 
 class StatusViewSet(viewsets.ModelViewSet):
@@ -36,9 +37,21 @@ class StatusViewSet(viewsets.ModelViewSet):
         Parameter <strong>id</strong> is the ID of the status that you want to update.
     """
 
-    permission_classes = (IsAuthenticated,)
     serializer_class = StatusSerializer
     queryset = Status.objects.all()
+
+    def get_permissions(self):
+        """
+        Get permission object for certain action
+        :return: Permission object
+        """
+        permission_classes = []
+        if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or \
+                self.action == 'destroy':
+            permission_classes = [IsAdminUser]
+        elif self.action == 'list' or self.action == 'retrieve':
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
 
 class ReportViewSet(viewsets.ModelViewSet):
@@ -73,6 +86,28 @@ class ReportViewSet(viewsets.ModelViewSet):
         Parameter <strong>id</strong> is the ID of the Report that you want to update.
     """
 
-    permission_classes = (IsAuthenticated,)
     serializer_class = ReportSerializer
     queryset = Report.objects.all()
+
+    def get_permissions(self):
+        """
+        Get permission object for certain action
+        :return: Permission object
+        """
+        permission_classes = []
+        if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or \
+                self.action == 'destroy':
+            permission_classes = [IsAdminOrOwnerOrReadOnly]
+        elif self.action == 'list' or self.action == 'retrieve':
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+
+    def get_serializer_class(self):
+        """
+        Get serializer class for certain action
+        :return: Serializer class
+        """
+        serializer_class = ReportSerializer
+        if self.action == 'create' or self.action == 'update':
+            serializer_class = ReportCreateUpdateSerializer
+        return serializer_class
