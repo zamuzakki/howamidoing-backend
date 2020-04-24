@@ -13,18 +13,19 @@ uwsgi:
   # Note you cannot scale if you use container_name
   container_name: howamidoing-backend-uwsgi
   build: docker
-  dockerfile: Dockerfile-dev
-  hostname: uwsgi
   environment:
+    - DJANGO_SECRET_KEY=Local
     - DATABASE_NAME=gis
     - DATABASE_USERNAME=docker
     - DATABASE_PASSWORD=docker
     - DATABASE_HOST=db
+    - DEFAULT_DB_URL=postgis://docker:docker@localhost:5432/db
     - DJANGO_SETTINGS_MODULE=project.config.local
-    - VIRTUAL_HOST=howamidoing-backend.kartoza.com
-    - VIRTUAL_PORT=8080
   volumes:
-    - ../django_project:/home/web/django_project
+    - ../project:/home/web/django_project/project
+    - ../manage.py:/home/web/django_project/manage.py
+    - ../coveragerc:/home/web/django_project/.coveragerc
+    - ../coverage:/home/web/django_project/.coverage
     - ./static:/home/web/static:rw
     - ./logs:/var/log/
   links:
@@ -32,9 +33,9 @@ uwsgi:
   restart: unless-stopped
   user: root
 
-devweb:
+web:
   # Note you cannot scale if you use container_name
-  container_name: howamidoing-backend-devweb
+  container_name: howamidoing-backend-web
   image: nginx
   hostname: nginx
   volumes:
@@ -45,6 +46,6 @@ devweb:
   links:
     - uwsgi:uwsgi
   ports:
-    - "80800:8080"
+    - "80:8080"
     - "4430:443"
   restart: unless-stopped
