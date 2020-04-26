@@ -38,3 +38,7 @@ collectstatic:
 	@echo "Collecting static in development mode"
 	@echo "------------------------------------------------------------------"
 	@docker exec $(PROJECT_ID)-build python manage.py collectstatic --noinput
+
+flake8:
+	@echo "Check flake 8"
+	@flake8
