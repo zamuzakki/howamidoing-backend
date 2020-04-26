@@ -4,6 +4,7 @@ from project.users.test.factories import UserFactory
 import factory
 from django.utils.timezone import now
 
+
 class StatusFactory(factory.django.DjangoModelFactory):
 
     class Meta:
