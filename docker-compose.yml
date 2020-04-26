@@ -20,9 +20,7 @@ services:
       - DJANGO_SETTINGS_MODULE=project.config.local
     volumes:
       - ./:/code
-    command: bash -c "python manage.py migrate &&
-                      python manage.py collectstatic &&
-                      python manage.py runserver 0.0.0.0:8080"
+    command: bash -c "python manage.py runserver 0.0.0.0:8080"
     ports:
       - "51202:8080"
     links:
