@@ -58,7 +58,7 @@ Content-Type application/json
 
 **Request**:
 
-`GET` `/report/{id}`
+`GET` `/report/:id/`
 
 Parameters:
 - id: ID of the report
@@ -162,7 +162,7 @@ Content-Type application/json
 
 **Request**:
 
-`PUT/PATCH` `/report/{id}`
+`PUT/PATCH` `/report/:id/`
 
 Parameters:
 - id: ID of the report
@@ -217,7 +217,7 @@ Content-Type application/json
 
 **Request**:
 
-`DELETE` `/report/{id}`
+`DELETE` `/report/:id/`
 
 Parameters:
 - id: ID of the report

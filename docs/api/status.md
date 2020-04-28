@@ -36,7 +36,7 @@ Content-Type application/json
 
 **Request**:
 
-`GET` `/status/{id}`
+`GET` `/status/:id/`
 
 Parameters:
 - id: ID of the status
@@ -102,7 +102,7 @@ Content-Type application/json
 
 **Request**:
 
-`PUT/PATCH` `/status/{id}`
+`PUT/PATCH` `/status/:id/`
 
 Parameters:
 - id: ID of the status
@@ -134,7 +134,7 @@ Content-Type application/json
 
 **Request**:
 
-`DELETE` `/status/{id}`
+`DELETE` `/status/:id/`
 
 Parameters:
 - id: ID of the status
