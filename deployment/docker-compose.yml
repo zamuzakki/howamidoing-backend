@@ -15,14 +15,19 @@ services:
     # Note you cannot scale if you use container_name
     container_name: howamidoing-backend-web
     build: ./
+#    dockerfile: Dockerfile-dev
     environment:
       - DEFAULT_DB_URL=postgis://docker:docker@db/gis
+      - DJANGO_SECRET_KEY=local
       - DJANGO_SETTINGS_MODULE=project.config.local
     volumes:
-      - ./:/code
-    command: bash -c "python manage.py runserver 0.0.0.0:8080"
+#      - ./:/code
+      - ../project:/home/web/django_project/project
+      - ../manage.py:/home/web/django_project/manage.py
+    command: bash -c "/usr/sbin/sshd && python manage.py runserver 0.0.0.0:8080"
     ports:
       - "51202:8080"
+      - "51203:22"
     links:
       - db:db
     restart: unless-stopped
