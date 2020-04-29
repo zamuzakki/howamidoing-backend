@@ -21,9 +21,9 @@ services:
       - DJANGO_SECRET_KEY=local
       - DJANGO_SETTINGS_MODULE=project.config.local
     volumes:
-#      - ./:/code
       - ../project:/home/web/django_project/project
       - ../manage.py:/home/web/django_project/manage.py
+      - ./backups:/home/web/django_project/backups
     command: bash -c "/usr/sbin/sshd && python manage.py runserver 0.0.0.0:8080"
     ports:
       - "51202:8080"
