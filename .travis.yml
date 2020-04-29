@@ -31,7 +31,9 @@ before_script:
   - psql -c 'CREATE EXTENSION postgis;' -U postgres -d test_db
 
 script:
+  - cd deployment
   - make flake8
+  - cd ../
   - python manage.py migrate
   - python manage.py collectstatic --noinput --verbosity 0
   - coverage run manage.py test
