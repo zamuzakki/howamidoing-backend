@@ -52,8 +52,7 @@ class Report(models.Model):
         help_text=_('Status of this report'),
         on_delete=models.CASCADE,
         null=False,
-        blank=False,
-        default=1
+        blank=False
     )
 
     timestamp = models.DateTimeField(
@@ -66,8 +65,7 @@ class Report(models.Model):
         help_text=_('Owner/user of this report'),
         on_delete=models.CASCADE,
         null=False,
-        blank=False,
-        default=1
+        blank=False
     )
 
     def __str__(self):
@@ -102,7 +100,7 @@ class KmGrid(models.Model):
     class Meta:
         # Temporarily set managed to False because we still don't know
         # how to create the data
-        managed = False
+        managed = True
         ordering = ('-id',)
 
 

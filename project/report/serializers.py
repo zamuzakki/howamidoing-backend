@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from .models import Status, Report
+from .models import Status, Report, KmGrid
 from project.users.serializers import UserSerializer
 
 class StatusSerializer(serializers.ModelSerializer):
@@ -24,6 +24,7 @@ class ReportCreateUpdateSerializer(GeoFeatureModelSerializer):
         geo_field = 'location'
         fields = '__all__'
 
+
 class ReportSerializer(GeoFeatureModelSerializer):
     """
     Serializer for Status object in list and retrieve action.
@@ -38,3 +39,14 @@ class ReportSerializer(GeoFeatureModelSerializer):
         geo_field = 'location'
         fields = '__all__'
         extra_kwargs = {'status': {'required': True}, 'user': {'required': True}}
+
+
+class KmGridSerializer(GeoFeatureModelSerializer):
+    """
+    Serializer for KmGrid object.
+    """
+
+    class Meta:
+        model = KmGrid
+        geo_field = 'geometry'
+        fields = '__all__'
