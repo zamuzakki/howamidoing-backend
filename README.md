@@ -24,4 +24,4 @@ $ make superuser    # create superuser
 
 ## API Usage How-to
 
-Please refer to this [doc](https://github.com/kartoza/howamidoing-backend/blob/develop/docs/api) for endpoints and authentication.
+Please refer to this [doc](https://github.com/kartoza/howamidoing-backend/blob/develop/docs) for endpoints, authentication, and initial KmGrid setup.
