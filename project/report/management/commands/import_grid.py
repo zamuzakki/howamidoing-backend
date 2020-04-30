@@ -43,7 +43,7 @@ class Command(BaseCommand):
                         is_geojson, geojson_data = check_geojson_loadable(json_data)
                         if is_geojson:
                             print("Valid GEOJSON file! Inserting KmGrid.")
-                            create_grid_data(geojson_data)
+                            loop_geojson(geojson_data)
                         else:
                             print('File is not a GEOJSON file.')
                     else:
@@ -76,11 +76,16 @@ def check_geojson_loadable(json_data):
     else:
         return False, json_data
 
-def create_grid_data(geojson_data):
+def loop_geojson(geojson_data):
     for i, grid in enumerate(geojson_data['features']):
-        geometry = GEOSGeometry(str(grid['geometry']))
-        population = grid['properties']['population_count']
-        KmGrid.objects.create(
-            geometry=geometry,
-            population=population
-        ).save()
+        create_single_grid_from_features(grid)
+
+def create_single_grid_from_features(grid):
+    geometry = GEOSGeometry(str(grid['geometry']))
+    population = grid['properties']['population_count']
+    grid = KmGrid.objects.create(
+        geometry=geometry,
+        population=population
+    )
+    grid.save()
+    return grid

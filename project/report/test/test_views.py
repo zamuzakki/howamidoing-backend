@@ -1,13 +1,17 @@
 from django.urls import reverse
+from django.conf import settings
 from django.core.paginator import Paginator
 from nose.tools import eq_, assert_not_equal
 from rest_framework.test import APITestCase
 from rest_framework import status as http_status
 from faker import Faker
-import factory
-from ..models import Status, Report
+from project.report.models import Status, Report, KmGrid
 from .factories import StatusFactory, ReportFactory
 from project.users.test.factories import UserFactory, UserAdminFactory
+from project.report.management.commands.import_grid import read_local_file, check_json_loadable, \
+    check_geojson_loadable, create_single_grid_from_features
+import factory
+
 
 fake = Faker()
 
@@ -72,7 +76,7 @@ class TestStatusListTestCase(TestStatusBaseClass):
         response = self.post_request_with_data({})
         eq_(response.status_code, http_status.HTTP_400_BAD_REQUEST)
 
-    def test_create_status_with_empty_data_fails_as_non_admin_user(self):
+    def test_create_status_with_empty_data_fails_as_regular_user(self):
         """
         Create new Status using post request with empty data as regular user.
         Response status-code should be 400 Bad Request.
@@ -317,7 +321,7 @@ class TestReportListTestCase(TestReportBaseClass):
     def test_create_report_with_empty_data_fails_as_regular_user_1(self):
         """
         Create new Report using post request with empty data as regular user.
-        Response status-code should be 400 Bad Request.
+        Response status-code should be 403 Forbidden.
         """
         self.set_user_1_credential()
         response = self.post_request_with_data({})
@@ -508,3 +512,248 @@ class TestReportDetailTestCase(TestReportBaseClass):
 
         report = Report.objects.filter(id=self.report_admin.id)
         eq_(report.count(), 0)
+
+
+class TestKmGridBaseClass(APITestCase):
+    """
+    Base Class for KmGrid test case.
+    """
+
+    def setUpTestData(cls):
+        """
+        Set base data for all test case
+        """
+        cls.user_1 = UserFactory()
+        cls.user_admin = UserAdminFactory()
+
+        _, cls.geojson = check_geojson_loadable(
+            check_json_loadable(
+                read_local_file(f'{settings.BASE_DIR}/../example/grid.geojson')
+            )[1]
+        )
+
+        cls.grid_1_json = {
+            "geometry": cls.geojson['features'][0]['geometry'],
+            "population": cls.geojson['features'][0]['properties']['population_count']
+        }
+
+        cls.grid_2_json = {
+            "geometry": cls.geojson['features'][1]['geometry'],
+            "population": cls.geojson['features'][1]['properties']['population_count']
+        }
+
+        cls.grid_1 = create_single_grid_from_features(cls.geojson['features'][0])
+        cls.grid_2 = create_single_grid_from_features(cls.geojson['features'][1])
+
+    def set_user_1_credential(self):
+        """
+        Set user_1 credential.
+        """
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.user_1.auth_token}')
+
+    def set_user_admin_credential(self):
+        """
+        Set user_admin credential.
+        """
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.user_admin.auth_token}')
+
+
+class TestKmGridListTestCase(TestKmGridBaseClass):
+    """
+    Tests /grid list operations.
+    """
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Before TestCase is run, set some data.
+        """
+        return super().setUpTestData(cls)
+
+    def setUp(self):
+        """
+        Set data for this test case.
+        """
+        self.url = reverse('kmgrid-list')
+
+    def post_request_with_data(self, data):
+        """
+        Send POST request with data to defined URL.
+        """
+        response = self.client.post(self.url, data, format='json')
+        return response
+
+    def test_create_grid_with_empty_data_fails_as_regular_user(self):
+        """
+        Create new KmGrid using post request with empty data as regular user.
+        Response status-code should be 400 Bad Request.
+        """
+        self.set_user_1_credential()
+        response = self.post_request_with_data({})
+        eq_(response.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_create_grid_with_empty_data_fails_as_admin_user(self):
+        """
+        Create new KmGrid using post request with empty data as admin user.
+        Response status-code should be 400 Bad Request.
+        """
+        self.set_user_admin_credential()
+        response = self.post_request_with_data({})
+        eq_(response.status_code, http_status.HTTP_400_BAD_REQUEST)
+
+    def test_create_grid_with_valid_data_fails_as_regular_user(self):
+        """
+        Create new KmGrid using post request with valid data as regular user.
+        Response status-code should be 403 Forbidden since only admin can do it.
+        """
+        self.set_user_1_credential()
+        response = self.post_request_with_data(self.geojson)
+        eq_(response.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_create_grid_with_valid_data_succeeds_as_admin_user(self):
+        """
+        Create new KmGrid using post request with valid data as admin user.
+        Response status-code should be 201 Created the length should be the same between reponse and queryset.
+        """
+        self.set_user_admin_credential()
+        response = self.post_request_with_data(self.grid_1_json)
+        eq_(response.status_code, http_status.HTTP_201_CREATED)
+
+        grid = KmGrid.objects.get(pk=response.data['id'])
+        eq_(grid.population, response.data['properties']['population'])
+
+    def test_list_grid_succeeds_as_regular_user(self):
+        """
+        List KmGrid as regular user.
+        Response grid-code should be 200 OK.
+        """
+        self.set_user_1_credential()
+        response = self.client.get(self.url, {'page': 1})
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+    def test_list_grid_grid_succeeds_as_admin_user(self):
+        """
+        List KmGrid as regular user.
+        Response grid-code should be 200 OK and the length should be the same between reponse and queryset.
+        """
+        self.set_user_admin_credential()
+        response = self.client.get(self.url, {'page': 1})
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+        grid_qs = KmGrid.objects.all()
+        grid_qs_page_1 = Paginator(grid_qs, 1)
+        eq_(response.data.get('count'), grid_qs_page_1.count)
+
+class TestKmGridDetailTestCase(TestKmGridBaseClass):
+    """
+    Tests /grid detail operations.
+    """
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Before TestCase is run, set some data.
+        """
+        return super().setUpTestData(cls)
+
+    def get_request_with_data(self, url):
+        """
+        Send POST request with data to defined URL.
+        """
+        response = self.client.get(url, format='json')
+        return response
+
+    def post_request_with_data(self, url, data):
+        """
+        Send POST request with data to defined URL.
+        """
+        response = self.client.post(url, data, format='json')
+        return response
+
+    def put_request_valid_data(self, url, data):
+        """
+        Send PUT request with data to defined URL.
+        :returns response
+        """
+        response = self.client.put(url, data, format='json')
+        return response
+
+    def delete_request_valid_data(self, url):
+        """
+        Send DELETE request with data to defined URL.
+        :return response data
+        """
+        response = self.client.delete(url)
+        return response
+
+    def test_retrieve_grid_succeeds_as_admin_user(self):
+        """
+        Retrieve self KmGrid details as admin user.
+        Response status-code should be 200 OK.
+        """
+        self.set_user_admin_credential()
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_1.id})
+        response = self.get_request_with_data(url)
+
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+    def test_retrieve_grid_succeeds_as_regular_user(self):
+        """
+        Retrieve self KmGrid details as regular user.
+        Response status-code should be 200 OK.
+        """
+        self.set_user_1_credential()
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_1.id})
+        response = self.client.get(url, format='json')
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+    def test_update_a_grid_succeeds_as_admin_user(self):
+        """
+        Update KmGrid details as admin user.
+        Response status-code should be 200 OK and KmGrid status and user should be updated.
+        """
+        self.set_user_admin_credential()
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_1.id})
+        data = self.grid_2_json
+
+        response = self.put_request_valid_data(url, data)
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+        grid = KmGrid.objects.get(pk=self.grid_1.id)
+        eq_(grid.population, response.data['properties']['population'])
+
+    def test_update_others_grid_fails_as_regular_user(self):
+        """
+        Update KmGrid details as regular user.
+        Response status-code should be 403 Forbidden
+        """
+        self.set_user_1_credential()
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_2.id})
+        data = self.grid_1_json
+
+        response = self.put_request_valid_data(url, data)
+        eq_(response.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_delete_a_grid_succeeds_as_admin_user(self):
+        """
+        Delete KmGrid as admin user.
+        Response status-code should be 204 No Content and KmGrid be deleted.
+        """
+        self.set_user_admin_credential()
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_1.id})
+        response = self.client.delete(url)
+        eq_(response.status_code, http_status.HTTP_204_NO_CONTENT)
+
+        grid = KmGrid.objects.filter(id=self.grid_1.id)
+        eq_(grid.count(), 0)
+
+    def test_delete_a_grid_succeeds_as_regular_user(self):
+        """
+        Delete KmGrid as regular user.
+        Response status-code should be 403 Forbidden.
+        """
+        self.set_user_admin_credential()
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_1.id})
+        response = self.client.delete(url)
+        eq_(response.status_code, http_status.HTTP_204_NO_CONTENT)
+
+        grid = KmGrid.objects.filter(id=self.grid_1.id)
+        eq_(grid.count(), 0)

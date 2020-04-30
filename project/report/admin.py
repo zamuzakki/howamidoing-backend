@@ -4,7 +4,7 @@ from django.urls import path
 from leaflet.admin import LeafletGeoAdmin
 from .forms import FileImportForm
 from .models import Status, Report, KmGrid
-from .management.commands.import_grid import check_json_loadable, check_geojson_loadable, create_grid_data
+from .management.commands.import_grid import check_json_loadable, check_geojson_loadable, loop_geojson
 
 admin.site.site_header = 'How Am I Doing? Administration'
 
@@ -32,7 +32,7 @@ class KmGridAdmin(LeafletGeoAdmin):
             if is_json:
                 is_geojson, geojson_data = check_geojson_loadable(json_data)
                 if is_geojson:
-                    create_grid_data(geojson_data)
+                    loop_geojson(geojson_data)
                 else:
                     self.message_user(request, "File is not a GEOJSON file.")
             else:

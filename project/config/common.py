@@ -4,10 +4,10 @@ import dj_database_url
 from configurations import Configuration
 from decouple import config
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 class Common(Configuration):
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
     INSTALLED_APPS = (
         'django.contrib.admin',
         'django.contrib.auth',
