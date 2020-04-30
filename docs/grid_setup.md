@@ -23,4 +23,4 @@ $ python manage.py import_grid --file backups/your_grid_file.geojson
 ```
 
 
-You can check the GEOJson file example [here](https://github.com/kartoza/howamidoing-backend/blob/develop/example/grid.geojson)
+The GEOJson file must use WGS84-EPSG:4326 as CRS. You can check the GEOJson file example [here](https://github.com/kartoza/howamidoing-backend/blob/develop/example/grid.geojson)

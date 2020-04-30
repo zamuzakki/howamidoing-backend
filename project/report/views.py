@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .models import Status, Report, KmGrid
-from .permissions import IsAdminOrOwnerOrReadOnly
+from .permissions import IsAdminOrOwner
 from .serializers import StatusSerializer, ReportSerializer, \
     ReportCreateUpdateSerializer, KmGridSerializer
 
@@ -87,7 +87,6 @@ class ReportViewSet(viewsets.ModelViewSet):
         Parameter <strong>id</strong> is the ID of the Report that you want to update.
     """
 
-    serializer_class = ReportSerializer
     queryset = Report.objects.all()
 
     def get_permissions(self):
@@ -97,10 +96,10 @@ class ReportViewSet(viewsets.ModelViewSet):
         """
         permission_classes = []
         if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or \
-                self.action == 'destroy':
-            permission_classes = [IsAdminOrOwnerOrReadOnly]
-        elif self.action == 'list' or self.action == 'retrieve':
-            permission_classes = [IsAuthenticated]
+                self.action == 'retrieve':
+            permission_classes = [IsAdminOrOwner]
+        elif self.action == 'list' or self.action == 'destroy':
+            permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):

@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status as http_status
 from faker import Faker
 import factory
-from ..models import Status
+from ..models import Status, Report
 from .factories import StatusFactory, ReportFactory
 from project.users.test.factories import UserFactory, UserAdminFactory
 
@@ -221,29 +221,55 @@ class TestReportBaseClass(APITestCase):
         """
         Set base data for all test case
         """
+        cls.user_1 = UserFactory()
+        cls.user_2 = UserFactory()
+        cls.user_admin = UserAdminFactory()
+
         cls.status_1 = StatusFactory()
         cls.status_2 = StatusFactory()
 
-        cls.user_1 = UserFactory()
-        cls.user_2 = UserFactory()
+        cls.report_1 = ReportFactory(user=cls.user_1)
+        cls.report_2 = ReportFactory(user=cls.user_2)
+        cls.report_admin = ReportFactory(user=cls.user_admin)
 
-        cls.report_1_data_dict = factory.build(dict, FACTORY_CLASS=ReportFactory)
-        cls.report_2_data_dict = factory.build(dict, FACTORY_CLASS=ReportFactory)
-
-        cls.report_1_data_for_create_update = {
-            "status": cls.report_1_data_dict.get('status').id,
-            "user": cls.report_1_data_dict.get('user').id,
+        cls.location_1 = cls.report_1.location
+        cls.report_1_json = {
             "location": {
                 "type": "Point",
                 "coordinates": [
-                    cls.report_1_data_dict.get('location').x,
-                    cls.report_1_data_dict.get('location').y,
+                    cls.location_1.x,
+                    cls.location_1.y
                 ]
-            }
+            },
+            "status": cls.status_1.id,
+            "user": cls.user_1.id,
         }
 
-        cls.report_1 = ReportFactory()
-        cls.report_2 = ReportFactory()
+        cls.location_2 = cls.report_2.location
+        cls.report_2_json = {
+            "location": {
+                "type": "Point",
+                "coordinates": [
+                    cls.location_2.x,
+                    cls.location_2.y
+                ]
+            },
+            "status": cls.status_2.id,
+            "user": cls.user_2.id,
+        }
+
+        cls.location_admin = cls.report_admin.location
+        cls.report_admin_json = {
+            "location": {
+                "type": "Point",
+                "coordinates": [
+                    cls.location_admin.x,
+                    cls.location_admin.y
+                ]
+            },
+            "status": cls.status_1.id,
+            "user": cls.user_admin.id,
+        }
 
     def set_user_1_credential(self):
         """
@@ -257,12 +283,17 @@ class TestReportBaseClass(APITestCase):
         """
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.user_2.auth_token}')
 
+    def set_user_admin_credential(self):
+        """
+        Set user_admin credential.
+        """
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.user_admin.auth_token}')
+
 
 class TestReportListTestCase(TestReportBaseClass):
     """
     Tests /report list operations.
     """
-
     @classmethod
     def setUpTestData(cls):
         """
@@ -283,16 +314,197 @@ class TestReportListTestCase(TestReportBaseClass):
         response = self.client.post(self.url, data, format='json')
         return response
 
-    def test_create_report_with_empty_data_succeeds_as_user(self):
+    def test_create_report_with_empty_data_fails_as_regular_user_1(self):
         """
-        Create new Report using post request with empty data as user.
+        Create new Report using post request with empty data as regular user.
         Response status-code should be 400 Bad Request.
         """
-        pass
+        self.set_user_1_credential()
+        response = self.post_request_with_data({})
+        eq_(response.status_code, http_status.HTTP_403_FORBIDDEN)
 
-    def test_create_report_with_valid_data_succeeds_as_user(self):
+    def test_create_self_report_with_valid_data_succeeds_as_regular_user(self):
         """
-        Create new Report using post request with valid data as user.
+        Create new Report using post request with valid data as regular user.
         Response status-code should be 201 Created the length should be the same between reponse and queryset.
         """
-        pass
+        self.set_user_1_credential()
+        response = self.post_request_with_data(self.report_1_json)
+        eq_(response.status_code, http_status.HTTP_201_CREATED)
+
+        report = Report.objects.get(pk=response.data['id'])
+        eq_(report.user.id, response.data['properties']['user'])
+        eq_(report.status.id, response.data['properties']['status'])
+
+    def test_create_report_with_valid_data_succeeds_as_admin_user(self):
+        """
+        Create new Report using post request with valid data as admin user.
+        Response status-code should be 201 Created the length should be the same between reponse and queryset.
+        """
+        self.set_user_admin_credential()
+        response = self.post_request_with_data(self.report_admin_json)
+        eq_(response.status_code, http_status.HTTP_201_CREATED)
+
+        report = Report.objects.get(pk=response.data['id'])
+        eq_(report.user.id, response.data['properties']['user'])
+        eq_(report.status.id, response.data['properties']['status'])
+
+    def test_list_report_fails_as_regular_user(self):
+        """
+        List Report as regular user.
+        Response report-code should be 403 Forbidden because only admin can do it.
+        """
+        self.set_user_1_credential()
+        response = self.client.get(self.url, {'page': 1})
+        eq_(response.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_list_report_report_succeeds_as_admin_user(self):
+        """
+        List Report as regular user.
+        Response report-code should be 200 OK and the length should be the same between reponse and queryset.
+        """
+        self.set_user_admin_credential()
+        response = self.client.get(self.url, {'page': 1})
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+        report_qs = Report.objects.all()
+        report_qs_page_1 = Paginator(report_qs, 1)
+        eq_(response.data.get('count'), report_qs_page_1.count)
+
+
+class TestReportDetailTestCase(TestReportBaseClass):
+    """
+    Tests /report detail operations.
+    """
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Before TestCase is run, set some data.
+        """
+        return super().setUpTestData(cls)
+
+    def get_request_with_data(self, url):
+        """
+        Send POST request with data to defined URL.
+        """
+        response = self.client.get(url, format='json')
+        return response
+
+    def post_request_with_data(self, url, data):
+        """
+        Send POST request with data to defined URL.
+        """
+        response = self.client.post(url, data, format='json')
+        return response
+
+    def put_request_valid_data(self, url, data):
+        """
+        Send PUT request with data to defined URL.
+        :returns response
+        """
+        response = self.client.put(url, data, format='json')
+        return response
+
+    def delete_request_valid_data(self, url):
+        """
+        Send DELETE request with data to defined URL.
+        :return response data
+        """
+        response = self.client.delete(url)
+        return response
+
+    def test_retrieve_self_report_succeeds_as_admin_user(self):
+        """
+        Retrieve self Report details as admin user.
+        Response status-code should be 200 OK.
+        """
+        self.set_user_admin_credential()
+        url = reverse('report-detail', kwargs={'pk': self.report_admin.id})
+        response = self.get_request_with_data(url)
+
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+    def test_retrieve_others_report_succeeds_as_admin_user(self):
+        """
+        Retrieve self Report details as admin user.
+        Response status-code should be 200 OK.
+        """
+        self.set_user_admin_credential()
+        url = reverse('report-detail', kwargs={'pk': self.report_1.id})
+        response = self.get_request_with_data(url)
+
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+    def test_retrieve_self_report_succeeds_as_regular_user(self):
+        """
+        Retrieve self Report details as regular user.
+        Response status-code should be 200 OK.
+        """
+        self.set_user_1_credential()
+        url = reverse('report-detail', kwargs={'pk': self.report_1.id})
+        response = self.client.get(url, format='json')
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+    def test_retrieve_others_report_succeeds_as_regular_user(self):
+        """
+        Retrieve others Report details as regular user.
+        Response status-code should be 403 Forbidden.
+        """
+        self.set_user_1_credential()
+        url = reverse('report-detail', kwargs={'pk': self.report_2.id})
+        response = self.get_request_with_data(url)
+        eq_(response.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_update_a_report_succeeds_as_admin_user(self):
+        """
+        Update Report details as admin user.
+        Response status-code should be 200 OK and Report status and user should be updated.
+        """
+        self.set_user_admin_credential()
+        url = reverse('report-detail', kwargs={'pk': self.report_1.id})
+        data = self.report_2_json
+
+        response = self.put_request_valid_data(url, data)
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+        report = Report.objects.get(pk=self.report_1.id)
+        eq_(report.status.id, response.data['properties']['status'])
+        eq_(report.user.id, response.data['properties']['user'])
+
+    def test_update_others_report_fails_as_regular_user(self):
+        """
+        Update Report details as regular user.
+        Response status-code should be 403 Forbidden and Report name should not be updated
+        """
+        self.set_user_1_credential()
+        url = reverse('report-detail', kwargs={'pk': self.report_2.id})
+        data = self.report_1_json
+
+        response = self.put_request_valid_data(url, data)
+        eq_(response.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_delete_a_report_succeeds_as_admin_user(self):
+        """
+        Delete Report as admin user.
+        Response status-code should be 204 No Content and Report be deleted.
+        """
+        self.set_user_admin_credential()
+        url = reverse('report-detail', kwargs={'pk': self.report_admin.id})
+        response = self.client.delete(url)
+        eq_(response.status_code, http_status.HTTP_204_NO_CONTENT)
+
+        report = Report.objects.filter(id=self.report_admin.id)
+        eq_(report.count(), 0)
+
+    def test_delete_a_report_succeeds_as_regular_user(self):
+        """
+        Delete Report as regular user.
+        Response status-code should be 403 Forbidden.
+        """
+        self.set_user_admin_credential()
+        url = reverse('report-detail', kwargs={'pk': self.report_admin.id})
+        response = self.client.delete(url)
+        eq_(response.status_code, http_status.HTTP_204_NO_CONTENT)
+
+        report = Report.objects.filter(id=self.report_admin.id)
+        eq_(report.count(), 0)

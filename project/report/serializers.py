@@ -38,7 +38,6 @@ class ReportSerializer(GeoFeatureModelSerializer):
         model = Report
         geo_field = 'location'
         fields = '__all__'
-        extra_kwargs = {'status': {'required': True}, 'user': {'required': True}}
 
 
 class KmGridSerializer(GeoFeatureModelSerializer):
@@ -50,3 +49,4 @@ class KmGridSerializer(GeoFeatureModelSerializer):
         model = KmGrid
         geo_field = 'geometry'
         fields = '__all__'
+        extra_kwargs = {'geometry': {'required': True}, 'population': {'required': True}}
