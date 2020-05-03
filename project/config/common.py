@@ -20,10 +20,11 @@ class Common(Configuration):
         # Third party apps
         'rest_framework',            # utilities for rest apis
         'rest_framework.authtoken',  # token authentication
-        'django_filters',  # for filtering rest endpoints
+        'django_filters',            # for filtering rest endpoints
         'rest_framework_gis',        # gis serializer
         'drf_yasg',                  # swagger UI for rest framework
         'leaflet',                   # Djanfo Leaflet to show map
+        'django_crontab',            # package for cron job
 
         # Your apps
         'project.users',
@@ -214,3 +215,11 @@ class Common(Configuration):
         'LOGIN_URL': '/api-auth/login/',
         'LOGOUT_URL': '/api-auth/logout/'
     }
+
+    # Django Crontab settings
+    CRONJOBS = [
+        (
+            '08 22 * * *',
+            'project.report.cron.auto_revert_status_to_all_well_here',
+        )
+    ]
