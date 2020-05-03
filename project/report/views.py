@@ -1,7 +1,9 @@
 from rest_framework import viewsets
+from django_filters import rest_framework as filters
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .models import Status, Report, KmGrid
 from .permissions import IsAdminOrOwner
+from .filters import KmGridFilter
 from .serializers import StatusSerializer, ReportSerializer, \
     ReportCreateUpdateSerializer, KmGridSerializer
 
@@ -147,6 +149,8 @@ class KmGridViewSet(viewsets.ModelViewSet):
 
     serializer_class = KmGridSerializer
     queryset = KmGrid.objects.all()
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = KmGridFilter
 
     def get_permissions(self):
         """

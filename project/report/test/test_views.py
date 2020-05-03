@@ -1,6 +1,7 @@
 from contextlib import redirect_stdout
 from django.urls import reverse
 from django.conf import settings
+from django.contrib.gis.geos import GEOSGeometry
 from django.core.paginator import Paginator
 from nose.tools import eq_, assert_not_equal
 from rest_framework.test import APITestCase
@@ -645,6 +646,40 @@ class TestKmGridListTestCase(TestKmGridBaseClass):
         grid_qs = KmGrid.objects.all()
         grid_qs_page_1 = Paginator(grid_qs, 1)
         eq_(response.data.get('count'), grid_qs_page_1.count)
+
+    def test_filter_grid_with_parameter_succeeds_as_regular_user(self):
+        """
+        Filter KmGrid with parameter as regular user.
+        Response grid-code should be 200 OK and showing filtered results.
+        """
+        self.set_user_1_credential()
+        params = {
+            "max_population": 100,
+            "min_population": 90,
+            "contains_geom": {
+                "type": "Point",
+                "coordinates": [
+                    self.grid_1_json['geometry']['coordinates'][0][0][0],
+                    self.grid_1_json['geometry']['coordinates'][0][0][1]
+                ]
+            }
+        }
+        param = f"?max_population={params['max_population']}&" + \
+            f"min_population={params['min_population']}&" + \
+            f"contains_geom={json.dumps(params['contains_geom'])}"
+
+        response = self.client.get(self.url + param)
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+        filtered_grid = KmGrid.objects.filter(
+            population__gte=params['min_population'],
+            population__lte=params['max_population'],
+            geometry__contains=GEOSGeometry(
+                json.dumps(params['contains_geom']),
+            )
+        )
+        eq_(response.data['count'], filtered_grid.count())
+
 
 class TestKmGridDetailTestCase(TestKmGridBaseClass):
     """

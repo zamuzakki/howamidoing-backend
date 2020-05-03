@@ -3,7 +3,7 @@ from .views import StatusViewSet, ReportViewSet, KmGridViewSet
 from rest_framework.routers import DefaultRouter
 
 
-router = DefaultRouter(trailing_slash=True)
+router = DefaultRouter(trailing_slash=False)
 
 router.register(r'status', StatusViewSet)
 router.register(r'report', ReportViewSet)

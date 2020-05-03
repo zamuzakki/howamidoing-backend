@@ -6,7 +6,7 @@ Some implementation might be unused by the howamidoing-frontend, e.g. deleting/u
 
 **Request**:
 
-`POST` `/report/`
+`POST` `/api/v1/report/`
 
 Parameters:
 
@@ -58,7 +58,7 @@ Content-Type application/json
 
 **Request**:
 
-`GET` `/report/:id/`
+`GET` `/api/v1/report/:id/`
 
 Parameters:
 - id: ID of the report
@@ -105,7 +105,7 @@ Content-Type application/json
 
 **Request**:
 
-`GET` `/report/?page={page}`
+`GET` `/api/v1/report/?page={page}`
 
 Parameters:
 - page: A page number within the paginated result set.
@@ -162,7 +162,7 @@ Content-Type application/json
 
 **Request**:
 
-`PUT/PATCH` `/report/:id/`
+`PUT/PATCH` `/api/v1/report/:id/`
 
 Parameters:
 - id: ID of the report
@@ -217,7 +217,7 @@ Content-Type application/json
 
 **Request**:
 
-`DELETE` `/report/:id/`
+`DELETE` `/api/v1/report/:id/`
 
 Parameters:
 - id: ID of the report
