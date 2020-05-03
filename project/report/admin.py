@@ -33,12 +33,12 @@ class KmGridAdmin(LeafletGeoAdmin):
                 is_geojson, geojson_data = check_geojson_loadable(json_data)
                 if is_geojson:
                     loop_geojson(geojson_data)
+                    self.message_user(request, "Your GEOJSON file has been imported")
                 else:
                     self.message_user(request, "File is not a GEOJSON file.")
             else:
-                self.message_user('File is not a JSON file.')
+                self.message_user(request, 'File is not a JSON file.')
 
-            self.message_user(request, "Your GEOJSON file has been imported")
             return redirect("..")
 
         form = FileImportForm()
