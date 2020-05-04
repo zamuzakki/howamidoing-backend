@@ -1,3 +1,4 @@
+from django.contrib.gis.geos import fromstr
 from django.contrib.gis.db import models as gis
 from django.db import models
 from project.users.models import User
@@ -35,6 +36,30 @@ class Status(models.Model):
         verbose_name_plural = 'Statuses'
 
 
+class ReportQuerySet(models.QuerySet):
+    """Custom QuerySet for Report."""
+
+    def location_contained(self, geojson_geometry_string):
+        geometry = fromstr(geojson_geometry_string, srid=4326)
+        return self.filter(
+            location__contained=geometry
+        )
+
+    def status_contains(self, status_name):
+        return self.filter(
+            status__name__icontains=status_name
+        )
+
+    def green_report(self):
+        return self.status_contains('well')
+
+    def yellow_report(self):
+        return self.status_contains('food')
+
+    def red_report(self):
+        return self.status_contains('red')
+
+
 class Report(models.Model):
     """
     Report about latest user status.
@@ -68,11 +93,39 @@ class Report(models.Model):
         blank=False
     )
 
+    objects = ReportQuerySet.as_manager()
+
     def __str__(self):
         return '{} | {} | {} | {}'.format(self.id, self.location, self.timestamp, self.user.username)
 
     class Meta:
         ordering = ('-id',)
+
+
+class PopulatedKmGridManager(models.Manager):
+    """Custom version manager that shows only populated Grid."""
+
+    def get_query_set(self):
+        """Query set generator."""
+        return super(PopulatedKmGridManager, self).get_query_set().filter(
+            population__gt=0
+        )
+
+
+class KmGridQuerySet(models.QuerySet):
+    """Custom version manager for Grid."""
+
+    def geometry_contains(self, geojson_geometry_string):
+        geometry = fromstr(geojson_geometry_string, srid=4326)
+        return self.filter(
+            geometry__contains=geometry
+        )
+
+    def geometry_equals(self, geojson_geometry_string):
+        geometry = fromstr(geojson_geometry_string, srid=4326)
+        return self.filter(
+            geometry=geometry
+        )
 
 
 class KmGrid(models.Model):
@@ -94,6 +147,9 @@ class KmGrid(models.Model):
         default=300
     )
 
+    objects = KmGridQuerySet().as_manager()
+    populated_objects = PopulatedKmGridManager()
+
     def __str__(self):
         return '{} | {} | {}'.format(self.id, self.geometry, self.population)
 
@@ -102,6 +158,34 @@ class KmGrid(models.Model):
         # how to create the data
         managed = True
         ordering = ('-id',)
+
+
+class KmGridScoreQuerySet(KmGridQuerySet):
+    """Custom version manager for Grid."""
+
+    def geometry_contains(self, geojson_geometry_string):
+        geometry = fromstr(geojson_geometry_string, srid=4326)
+        return self.filter(
+            geometry__contains=geometry
+        )
+
+    def geometry_equals(self, geojson_geometry_string):
+        geometry = fromstr(geojson_geometry_string, srid=4326)
+        return self.filter(
+            geometry=geometry
+        )
+
+    def green_grid(self):
+        return self.filter(total_score=0)
+
+    def yellow_grid(self):
+        return self.filter(total_score=1)
+
+    def red_grid(self):
+        return self.filter(total_score=2)
+
+    def grid_with_report(self):
+        return self.filter(total_report__gt=0)
 
 
 class KmGridScore(models.Model):
@@ -170,6 +254,13 @@ class KmGridScore(models.Model):
         default=300
     )
 
+    total_report = models.SmallIntegerField(
+        help_text=_('The number of all report in the grid'),
+        null=False,
+        blank=False,
+        default=0
+    )
+
     total_score = models.DecimalField(
         help_text=_('Total score of this grid'),
         max_digits=7,
@@ -179,6 +270,8 @@ class KmGridScore(models.Model):
         default=0
     )
 
+    objects = KmGridScoreQuerySet.as_manager()
+
     def __str__(self):
         return '{} | {} | {} | {}'.format(self.id, self.geometry, self.population, self.total_score)
 
@@ -187,7 +280,7 @@ class KmGridScore(models.Model):
         setattr(self, f'score_{color}', score)
         self.save()
 
-    def set_total_core(self):
+    def set_total_score(self):
         total_score = status_score_km_grid(
             self.count_green,
             self.count_yellow,
@@ -200,5 +293,5 @@ class KmGridScore(models.Model):
 
     class Meta:
         # Set managed to False because this model will access existing Materialized Views
-        managed = False
+        managed = True
         ordering = ('-id',)

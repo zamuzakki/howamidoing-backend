@@ -53,10 +53,10 @@ def import_grid_from_geojson(file_path):
                 print("Valid GEOJSON file! Inserting KmGrid.")
                 result = loop_geojson(geojson_data)
                 print('Imported {}/{} ({})'.format(
-                        result[0],
-                        result[1],
-                        (result[0]/result[1])/100
-                    )
+                    result[0],
+                    result[1],
+                    (result[0]/result[1])/100
+                )
                 )
             else:
                 print('File is not a GEOJSON file.')
@@ -160,7 +160,7 @@ def loop_geojson(geojson_data):
         grid = create_single_grid_from_features(grid)
         if grid is not None:
             created_object += 1
-    
+
     return(created_object, len(geojson_data['features']))
 
 def create_single_grid_from_features(grid):
@@ -176,6 +176,7 @@ def create_single_grid_from_features(grid):
     try:
         population = grid['properties']['population_count']
     except KeyError as e:
+        print(e)
         return None
 
     try:

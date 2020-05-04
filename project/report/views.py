@@ -110,7 +110,7 @@ class ReportViewSet(viewsets.ModelViewSet):
         :return: Serializer class
         """
         serializer_class = ReportSerializer
-        if self.action == 'create' or self.action == 'update':
+        if self.action == 'create' or self.action == 'update' or self.action == 'partial_update':
             serializer_class = ReportCreateUpdateSerializer
         return serializer_class
 
