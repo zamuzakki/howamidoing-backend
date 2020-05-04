@@ -222,7 +222,11 @@ class Common(Configuration):
     # Django Crontab settings
     CRONJOBS = [
         (
-            '08 22 * * *',
+            '59 23 */3 * *',
             'project.report.cron.auto_revert_status_to_all_well_here',
+        ),
+        (
+            '1 0 * * *',
+            'project.report.cron.auto_generate_grid_score',
         )
     ]
