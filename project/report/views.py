@@ -1,11 +1,11 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from django_filters import rest_framework as filters
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from .models import Status, Report, KmGrid
+from .models import Status, Report, KmGrid, KmGridScore
 from .permissions import IsAdminOrOwner
-from .filters import KmGridFilter
+from .filters import KmGridFilter, KmGridScoreFilter
 from .serializers import StatusSerializer, ReportSerializer, \
-    ReportCreateUpdateSerializer, KmGridSerializer
+    ReportCreateUpdateSerializer, KmGridSerializer, KmGridScoreSerializer
 
 
 class StatusViewSet(viewsets.ModelViewSet):
@@ -162,5 +162,36 @@ class KmGridViewSet(viewsets.ModelViewSet):
                 self.action == 'destroy':
             permission_classes = [IsAdminUser]
         elif self.action == 'list' or self.action == 'retrieve':
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+
+class KmGridScoreViewSet(mixins.RetrieveModelMixin,
+                         mixins.ListModelMixin,
+                         viewsets.GenericViewSet):
+    """
+    retrieve:
+        Show KmGridScore object details.
+        <br>
+        Parameter <strong>id</strong> is the ID of the KM grid_score that you want to see.
+
+    list:
+        Show list of KmGridScore object.
+        <br>
+        Parameter <strong>page</strong> indicates the page number.
+        Each page consists of 100 objects
+    """
+
+    serializer_class = KmGridScoreSerializer
+    queryset = KmGridScore.objects.all()
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = KmGridScoreFilter
+
+    def get_permissions(self):
+        """
+        Get permission object for certain action
+        :return: Permission object
+        """
+        permission_classes = []
+        if self.action == 'list' or self.action == 'retrieve':
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]

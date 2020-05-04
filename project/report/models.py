@@ -39,10 +39,10 @@ class Status(models.Model):
 class ReportQuerySet(models.QuerySet):
     """Custom QuerySet for Report."""
 
-    def location_contained(self, geojson_geometry_string):
+    def location_within(self, geojson_geometry_string):
         geometry = fromstr(geojson_geometry_string, srid=4326)
         return self.filter(
-            location__contained=geometry
+            location__within=geometry
         )
 
     def status_contains(self, status_name):
@@ -57,7 +57,7 @@ class ReportQuerySet(models.QuerySet):
         return self.status_contains('food')
 
     def red_report(self):
-        return self.status_contains('red')
+        return self.status_contains('medic')
 
 
 class Report(models.Model):
@@ -124,7 +124,7 @@ class KmGridQuerySet(models.QuerySet):
     def geometry_equals(self, geojson_geometry_string):
         geometry = fromstr(geojson_geometry_string, srid=4326)
         return self.filter(
-            geometry=geometry
+            geometry__equals=geometry
         )
 
 
@@ -172,7 +172,7 @@ class KmGridScoreQuerySet(KmGridQuerySet):
     def geometry_equals(self, geojson_geometry_string):
         geometry = fromstr(geojson_geometry_string, srid=4326)
         return self.filter(
-            geometry=geometry
+            geometry__equals=geometry
         )
 
     def green_grid(self):

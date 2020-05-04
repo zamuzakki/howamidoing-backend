@@ -26,7 +26,7 @@ def generate_grid_score():
     # Loop each grid
     for grid in grids:
         # Query reports contained within each grid
-        grid_report = Report.objects.location_contained(grid.geometry).order_by(
+        grid_report = Report.objects.location_within(grid.geometry).order_by(
             'user', '-id'
         ).distinct('user')
         green_report = grid_report.green_report()
@@ -40,7 +40,6 @@ def generate_grid_score():
         grid_score.count_yellow = yellow_report.count()
         grid_score.count_red = red_report.count()
         grid_score.total_report = green_report.count() + yellow_report.count() + red_report.count()
-
         grid_score.save()
 
         grid_score.set_color_score('green')

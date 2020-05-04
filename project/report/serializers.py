@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from .models import Status, Report, KmGrid
+from .models import Status, Report, KmGrid, KmGridScore
 from project.users.serializers import UserSerializer
 
 class StatusSerializer(serializers.ModelSerializer):
@@ -50,3 +50,14 @@ class KmGridSerializer(GeoFeatureModelSerializer):
         geo_field = 'geometry'
         fields = '__all__'
         extra_kwargs = {'geometry': {'required': True}, 'population': {'required': True}}
+
+
+class KmGridScoreSerializer(GeoFeatureModelSerializer):
+    """
+    Serializer for KmGridScore object.
+    """
+
+    class Meta:
+        model = KmGridScore
+        geo_field = 'geometry'
+        fields = '__all__'
