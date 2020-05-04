@@ -7,7 +7,7 @@ Supports creating, viewing, listing, updating, and deleting status.
 
 `POST` `/api/v1/status/`
 
-Parameters:
+Payload Parameter:
 
 Name          | Type   | Required | Description
 --------------|--------|----------|------------
@@ -38,7 +38,7 @@ Content-Type application/json
 
 `GET` `/api/v1/status/:id/`
 
-Parameters:
+URL Parameters:
 - id: ID of the status
 
 *Note:*
@@ -65,7 +65,7 @@ Content-Type application/json
 
 `GET` `/api/v1/status/?page={page}`
 
-Parameters:
+Query Parameters:
 - page: A page number within the paginated result set.
 
 *Note:*
@@ -104,9 +104,10 @@ Content-Type application/json
 
 `PUT/PATCH` `/api/v1/status/:id/`
 
-Parameters:
+URL Parameters:
 - id: ID of the status
 
+Payload Parameters:
 Name          | Type   | Required | Description
 --------------|--------|----------|------------
 name          | string | Yes      | The name for the new status.
