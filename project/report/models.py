@@ -2,6 +2,7 @@ from django.contrib.gis.db import models as gis
 from django.db import models
 from project.users.models import User
 from django.utils.translation import ugettext_lazy as _
+from .utils.scoring_grid import color_score_km_grid, status_score_km_grid
 import logging
 
 logger = logging.getLogger(__name__)
@@ -51,8 +52,7 @@ class Report(models.Model):
         help_text=_('Status of this report'),
         on_delete=models.CASCADE,
         null=False,
-        blank=False,
-        default=1
+        blank=False
     )
 
     timestamp = models.DateTimeField(
@@ -65,8 +65,7 @@ class Report(models.Model):
         help_text=_('Owner/user of this report'),
         on_delete=models.CASCADE,
         null=False,
-        blank=False,
-        default=1
+        blank=False
     )
 
     def __str__(self):
@@ -101,7 +100,7 @@ class KmGrid(models.Model):
     class Meta:
         # Temporarily set managed to False because we still don't know
         # how to create the data
-        managed = False
+        managed = True
         ordering = ('-id',)
 
 
@@ -182,6 +181,22 @@ class KmGridScore(models.Model):
 
     def __str__(self):
         return '{} | {} | {} | {}'.format(self.id, self.geometry, self.population, self.total_score)
+
+    def set_color_score(self, color="green"):
+        score = color_score_km_grid(self.count_green, self.population, color)
+        setattr(self, f'score_{color}', score)
+        self.save()
+
+    def set_total_core(self):
+        total_score = status_score_km_grid(
+            self.count_green,
+            self.count_yellow,
+            self.count_red,
+            self.population,
+        )
+
+        self.total_score = total_score
+        self.save()
 
     class Meta:
         # Set managed to False because this model will access existing Materialized Views

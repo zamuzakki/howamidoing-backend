@@ -1,3 +1,26 @@
+def color_score_km_grid(user_report=0, population=0, color="green"):
+    """
+    color scoring km_grid based on count of a color
+
+    ::params::
+    user_report : count report of a color in grid
+    population_1 : number of ppulation in grid
+    color : color code of status (green, yellow, red)
+
+    ::params type::
+    user_report : integer
+    population_1 : integer
+    color : string
+
+    ::return ::
+    score : score for the color
+
+    ::return type :: integer
+    """
+    weight = {'green': 1, 'yellow': 2, 'red': 5}
+    score = (1 / population) * (weight.get(color, '1') * user_report)
+    return score
+
 def status_score_km_grid(
         user_report_green=0,
         user_report_yellow=0,
@@ -12,9 +35,9 @@ def status_score_km_grid(
     user_report_green : count of green report in grid
     user_report_yellow : count of yellow report in grid
     user_report_red : count of red report in grid
-    population : number of ppulation in grid
-    error_allowed : minimum percentage respondent of population required
-    estimated_respondent : estimated percentage respondent of population
+    population_1 : number of ppulation in grid
+    error_allowed : minimum percentage respondent of population_1 required
+    estimated_respondent : estimated percentage respondent of population_1
 
     ::params type::
     user_report_green : integer
@@ -42,8 +65,9 @@ def status_score_km_grid(
     if not user_report_yellow and not user_report_red:
         return 0
 
-    score = (1 / population) * \
-            ((5 * user_report_red) + (2 * user_report_yellow) - user_report_green)
+    score = color_score_km_grid(user_report_red, population, 'red') \
+        + color_score_km_grid(user_report_yellow, population, 'yellow') \
+        - color_score_km_grid(user_report_green, population, 'green')
 
     max_score_estimated = (1 / population) * (5 * estimated_respondent * population)
     min_score_estimated = (1 / population) * (-1 * estimated_respondent * population)

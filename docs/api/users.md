@@ -99,8 +99,8 @@ Content-Type application/json
 {
   "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011",
   "username": "richard",
-  "first_name": "Richard",
-  "last_name": "Hendriks",
-  "email": "richard@piedpiper.com",
+  "first_name": "Zulfikar",
+  "last_name": "Muzakki",
+  "email": "zakki@kartoza.com",
 }
 ```

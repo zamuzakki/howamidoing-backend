@@ -4,10 +4,10 @@ import dj_database_url
 from configurations import Configuration
 from decouple import config
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 class Common(Configuration):
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
     INSTALLED_APPS = (
         'django.contrib.admin',
         'django.contrib.auth',
@@ -20,10 +20,11 @@ class Common(Configuration):
         # Third party apps
         'rest_framework',            # utilities for rest apis
         'rest_framework.authtoken',  # token authentication
-        'django_filters',  # for filtering rest endpoints
+        'django_filters',            # for filtering rest endpoints
         'rest_framework_gis',        # gis serializer
         'drf_yasg',                  # swagger UI for rest framework
         'leaflet',                   # Djanfo Leaflet to show map
+        'django_crontab',            # package for cron job
 
         # Your apps
         'project.users',
@@ -89,7 +90,7 @@ class Common(Configuration):
     TEMPLATES = [
         {
             'BACKEND': 'django.template.backends.django.DjangoTemplates',
-            'DIRS': STATICFILES_DIRS,
+            'DIRS': [],
             'APP_DIRS': True,
             'OPTIONS': {
                 'context_processors': [
@@ -201,6 +202,9 @@ class Common(Configuration):
         'DEFAULT_AUTHENTICATION_CLASSES': (
             'rest_framework.authentication.SessionAuthentication',
             'rest_framework.authentication.TokenAuthentication',
+        ),
+        'DEFAULT_FILTER_BACKENDS': (
+            'django_filters.rest_framework.DjangoFilterBackend',
         )
     }
 
@@ -214,3 +218,11 @@ class Common(Configuration):
         'LOGIN_URL': '/api-auth/login/',
         'LOGOUT_URL': '/api-auth/logout/'
     }
+
+    # Django Crontab settings
+    CRONJOBS = [
+        (
+            '08 22 * * *',
+            'project.report.cron.auto_revert_status_to_all_well_here',
+        )
+    ]

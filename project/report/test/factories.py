@@ -4,6 +4,7 @@ from project.users.test.factories import UserFactory
 import factory
 from django.utils.timezone import now
 
+
 class StatusFactory(factory.django.DjangoModelFactory):
 
     class Meta:
@@ -16,7 +17,6 @@ class StatusFactory(factory.django.DjangoModelFactory):
 
 
 class DjangoGeoPointProvider(BaseProvider):
-
     def geo_point(self, **kwargs):
         kwargs.pop('coords_only', None)
         faker = factory.Faker('local_latlng', coords_only=True, **kwargs)
