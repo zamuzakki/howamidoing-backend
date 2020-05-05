@@ -276,7 +276,7 @@ class KmGridScore(models.Model):
         return '{} | {} | {} | {}'.format(self.id, self.geometry, self.population, self.total_score)
 
     def set_color_score(self, color="green"):
-        score = color_score_km_grid(self.count_green, self.population, color)
+        score = color_score_km_grid(getattr(self, f'count_{color}'), self.population, color)
         setattr(self, f'score_{color}', score)
         self.save()
 

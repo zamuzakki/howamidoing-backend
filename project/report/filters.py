@@ -13,14 +13,12 @@ class KmGridFilter(GeoFilterSet):
         model = KmGrid
         fields = ['max_population', 'min_population', 'contains_geom']
 
-class KmGridScoreFilter(GeoFilterSet):
-    max_population = filters.NumberFilter(field_name='population', lookup_expr='lte')
-    min_population = filters.NumberFilter(field_name='population', lookup_expr='gte')
-    contains_geom = GeometryFilter(field_name='geometry', lookup_expr='contains')
+
+class KmGridScoreFilter(KmGridFilter):
     total_score = filters.NumberFilter(field_name='total_score')
     min_total_report = filters.NumberFilter(field_name='total_report', lookup_expr='gte')
     max_total_report = filters.NumberFilter(field_name='total_report', lookup_expr='lte')
 
     class Meta:
         model = KmGridScore
-        fields = ['max_population', 'min_population', 'contains_geom', 'total_score']
+        fields = KmGridFilter.Meta.fields + ['total_score', 'min_total_report', 'max_total_report']
