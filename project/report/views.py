@@ -42,6 +42,7 @@ class StatusViewSet(viewsets.ModelViewSet):
 
     serializer_class = StatusSerializer
     queryset = Status.objects.all()
+    pagination_class = None
 
     def get_permissions(self):
         """

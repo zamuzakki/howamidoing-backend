@@ -188,6 +188,37 @@ class KmGridScoreQuerySet(KmGridQuerySet):
         return self.filter(total_report__gt=0)
 
 
+class KmGridScoreManager(models.Manager):
+    """Custom version manager for Grid Score."""
+
+    def get_queryset(self):
+        return KmGridQuerySet(self.model, using=self._db).filter(total_score__gt=0)
+
+    def geometry_contains(self, geojson_geometry_string):
+        geometry = fromstr(geojson_geometry_string, srid=4326)
+        return self.get_queryset().filter(
+            geometry__contains=geometry
+        )
+
+    def geometry_equals(self, geojson_geometry_string):
+        geometry = fromstr(geojson_geometry_string, srid=4326)
+        return self.get_queryset().filter(
+            geometry__equals=geometry
+        )
+
+    def green_grid(self):
+        return self.get_queryset().filter(total_score=0)
+
+    def yellow_grid(self):
+        return self.get_queryset().filter(total_score=1)
+
+    def red_grid(self):
+        return self.get_queryset().filter(total_score=2)
+
+    def grid_with_report(self):
+        return self.get_queryset().filter(total_report__gt=0)
+
+
 class KmGridScore(models.Model):
     """
     Materialized uiews for user status summary per grid
@@ -270,7 +301,7 @@ class KmGridScore(models.Model):
         default=0
     )
 
-    objects = KmGridScoreQuerySet.as_manager()
+    objects = KmGridScoreManager()
 
     def __str__(self):
         return '{} | {} | {} | {}'.format(self.id, self.geometry, self.population, self.total_score)
