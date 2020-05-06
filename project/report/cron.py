@@ -6,9 +6,11 @@ def auto_revert_status_to_all_well_here():
     """
     Auto revert user status to 'All Well Here' if there is no update for 3 days
     """
-    last_report_qs = Report.objects.all().order_by('user', '-id').distinct('user')
+    last_report_qs = Report.objects.all().order_by('user', '-id').distinct(
+        'user'
+    ).select_related('status')
     for report in last_report_qs:
-        if (report.timestamp - timezone.now()).days >= 3:
+        if (report.timestamp - timezone.now()).days >= 3 and 'well' not in report.status.name.lower():
             try:
                 new_report = Report.objects.create(
                     location=report.location,

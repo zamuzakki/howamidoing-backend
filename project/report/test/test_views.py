@@ -796,7 +796,6 @@ class TestKmGridDetailTestCase(TestKmGridBaseClass):
         grid = KmGrid.objects.filter(id=self.grid_1.id)
         eq_(grid.count(), 0)
 
-
 class TestKmGridImport(APITestCase):
     """
     TestCase for KmGrid import using command and admin page

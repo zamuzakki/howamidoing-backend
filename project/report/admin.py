@@ -3,7 +3,10 @@ from django.shortcuts import render, redirect
 from django.urls import path
 from leaflet.admin import LeafletGeoAdmin
 from .forms import FileImportForm
-from .models import Status, Report, KmGrid, KmGridScore
+from .models.status import Status
+from .models.report import Report
+from .models.km_grid import KmGrid
+from .models.km_grid_score import KmGridScore
 from .management.commands.import_grid import check_json_loadable, check_geojson_loadable, loop_geojson
 
 admin.site.site_header = 'How Am I Doing? Administration'
