@@ -1,64 +1,46 @@
-from rest_framework import viewsets, mixins
 from django_filters import rest_framework as filters
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from .models import Status, Report, KmGrid, KmGridScore
-from .permissions import IsAdminOrOwner
-from .filters import KmGridFilter, KmGridScoreFilter
-from .serializers import StatusSerializer, ReportSerializer, \
-    ReportCreateUpdateSerializer, KmGridSerializer, KmGridScoreSerializer
+from rest_framework import viewsets, mixins, status
+from rest_framework.permissions import IsAdminUser, AllowAny
+from rest_framework.response import Response
+from rest_framework_gis.filters import TMSTileFilter, InBBoxFilter
+from .models.status import Status
+from .models.report import Report
+from .models.km_grid import KmGrid
+from .models.km_grid_score import KmGridScore
+from .models.user import User
+from .filters import KmGridFilter, KmGridScoreFilter, ReportFilter
+from .serializers import StatusSerializer, ReportSerializer, ReportCreateSerializer,\
+    ReportRetrieveListSerializer, UserSerializer, KmGridSerializer,\
+    KmGridScoreSerializer
+import json
 
 
-class StatusViewSet(viewsets.ModelViewSet):
+class StatusViewSet(mixins.RetrieveModelMixin,
+                    mixins.ListModelMixin,
+                    viewsets.GenericViewSet):
     """
     retrieve:
-        Show Status object details.
+        Show Report object details.
         <br>
-        Parameter <strong>id</strong> is the ID of the status that you want to see.
+        Parameter <strong>id</strong> is the ID of the report that you want to see.
 
     list:
-        Show list of Status object.
+        Show list of Report object.
         <br>
         Parameter <strong>page</strong> indicates the page number.
         Each page consists of 100 objects
-
-    create:
-        Create new Status.
-
-    destroy:
-        Delete Status object.
-        <br>
-        Parameter <strong>id</strong> is the ID of the status that you want to delete.
-
-    update:
-        Update Status object.
-        <br>
-        Parameter <strong>id</strong> is the ID of the status that you want to update.
-
-    partial_update:
-        Update Status object.
-        <br>
-        Parameter <strong>id</strong> is the ID of the status that you want to update.
     """
 
     serializer_class = StatusSerializer
     queryset = Status.objects.all()
-    pagination_class = None
-
-    def get_permissions(self):
-        """
-        Get permission object for certain action
-        :return: Permission object
-        """
-        permission_classes = []
-        if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or \
-                self.action == 'destroy':
-            permission_classes = [IsAdminUser]
-        elif self.action == 'list' or self.action == 'retrieve':
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+    filter_backends = (filters.DjangoFilterBackend,)
 
 
-class ReportViewSet(viewsets.ModelViewSet):
+class ReportViewSet(mixins.RetrieveModelMixin,
+                    mixins.ListModelMixin,
+                    mixins.CreateModelMixin,
+                    mixins.DestroyModelMixin,
+                    viewsets.GenericViewSet):
     """
     retrieve:
         Show Report object details.
@@ -78,30 +60,40 @@ class ReportViewSet(viewsets.ModelViewSet):
         Delete Report object.
         <br>
         Parameter <strong>id</strong> is the ID of the Report that you want to delete.
-
-    update:
-        Update Report object.
-        <br>
-        Parameter <strong>id</strong> is the ID of the Report that you want to update.
-
-    partial_update:
-        Update Report object.
-        <br>
-        Parameter <strong>id</strong> is the ID of the Report that you want to update.
     """
 
+    serializer_class = ReportSerializer
     queryset = Report.objects.all()
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = ReportFilter
+
+    def create(self, request, *args, **kwargs):
+        try:
+            grid = KmGrid.objects.geometry_contains(
+                json.dumps(request.data['location'])
+            )
+            if grid.count() > 0:
+                request.data['grid'] = grid.first().id
+
+            print(request.data)
+
+            serializer = ReportSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            print(e)
+            return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        mixins.CreateModelMixin.perform_create(self, serializer)
+        headers = mixins.CreateModelMixin.get_success_headers(self, serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def get_permissions(self):
         """
         Get permission object for certain action
         :return: Permission object
         """
-        permission_classes = []
-        if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or \
-                self.action == 'retrieve':
-            permission_classes = [IsAdminOrOwner]
-        elif self.action == 'list' or self.action == 'destroy':
+        permission_classes = [AllowAny]
+        if self.action == 'list':
             permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
 
@@ -111,12 +103,16 @@ class ReportViewSet(viewsets.ModelViewSet):
         :return: Serializer class
         """
         serializer_class = ReportSerializer
-        if self.action == 'create' or self.action == 'update' or self.action == 'partial_update':
-            serializer_class = ReportCreateUpdateSerializer
+        if self.action == 'create':
+            serializer_class = ReportCreateSerializer
+        if self.action in ['retrieve', 'list']:
+            serializer_class = ReportRetrieveListSerializer
         return serializer_class
 
 
-class KmGridViewSet(viewsets.ModelViewSet):
+class KmGridViewSet(mixins.RetrieveModelMixin,
+                    mixins.ListModelMixin,
+                    viewsets.GenericViewSet):
     """
     retrieve:
         Show KmGrid object details.
@@ -131,21 +127,6 @@ class KmGridViewSet(viewsets.ModelViewSet):
 
     create:
         Create new KmGrid.
-
-    destroy:
-        Delete KmGrid object.
-        <br>
-        Parameter <strong>id</strong> is the ID of the KM grid that you want to delete.
-
-    update:
-        Update KmGrid object.
-        <br>
-        Parameter <strong>id</strong> is the ID of the KM grid that you want to update.
-
-    partial_update:
-        Update KmGrid object.
-        <br>
-        Parameter <strong>id</strong> is the ID of the KM grid that you want to update.
     """
 
     serializer_class = KmGridSerializer
@@ -153,18 +134,6 @@ class KmGridViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = KmGridFilter
 
-    def get_permissions(self):
-        """
-        Get permission object for certain action
-        :return: Permission object
-        """
-        permission_classes = []
-        if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or \
-                self.action == 'destroy':
-            permission_classes = [IsAdminUser]
-        elif self.action == 'list' or self.action == 'retrieve':
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
 
 class KmGridScoreViewSet(mixins.RetrieveModelMixin,
                          mixins.ListModelMixin,
@@ -184,15 +153,37 @@ class KmGridScoreViewSet(mixins.RetrieveModelMixin,
 
     serializer_class = KmGridScoreSerializer
     queryset = KmGridScore.objects.all()
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend, InBBoxFilter, TMSTileFilter)
     filterset_class = KmGridScoreFilter
+
+
+class UserViewSet(mixins.RetrieveModelMixin,
+                  mixins.ListModelMixin,
+                  mixins.CreateModelMixin,
+                  viewsets.GenericViewSet):
+    """
+    retrieve:
+        Show User object details.
+        <br>
+        Parameter <strong>id</strong> is the ID of the User that you want to see.
+
+    retrieve:
+        List User object.
+        <br>
+
+    create:
+        Create new User.
+    """
+
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
 
     def get_permissions(self):
         """
         Get permission object for certain action
         :return: Permission object
         """
-        permission_classes = []
-        if self.action == 'list' or self.action == 'retrieve':
-            permission_classes = [IsAuthenticated]
+        permission_classes = [AllowAny]
+        if self.action == 'list':
+            permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]

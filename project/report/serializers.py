@@ -1,7 +1,20 @@
 from rest_framework import serializers
-from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from .models import Status, Report, KmGrid, KmGridScore
-from project.users.serializers import UserSerializer
+from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeometryField
+from .models.status import Status
+from .models.report import Report
+from .models.km_grid import KmGrid
+from .models.km_grid_score import KmGridScore
+from .models.user import User
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for User object.
+    """
+
+    class Meta:
+        model = User
+        fields = '__all__'
+
 
 class StatusSerializer(serializers.ModelSerializer):
     """
@@ -10,33 +23,42 @@ class StatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Status
         fields = '__all__'
-        extra_kwargs = {'name': {'required': True}}
 
-class ReportCreateUpdateSerializer(GeoFeatureModelSerializer):
+
+class ReportCreateSerializer(serializers.Serializer):
     """
-    Serializer for Status object in create and update action
+    Serializer for Status object in create action
     This serializer does not use nested status and user object, only id.
-    This is because when creating or updating the object, we only need the id of the foregin-key,
-        without the details of the foreign-key object..
+    location is the locoation of the report,that will be mapped/converted to grid ID
     """
+    location = GeometryField()
+    status = serializers.IntegerField()
+    user = serializers.UUIDField()
+
+    class Meta:
+        fields = ('status', 'user', 'location')
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    """
+    Default Serializer for Status object.
+    """
+
     class Meta:
         model = Report
-        geo_field = 'location'
         fields = '__all__'
 
 
-class ReportSerializer(GeoFeatureModelSerializer):
+class ReportRetrieveListSerializer(serializers.ModelSerializer):
     """
     Serializer for Status object in list and retrieve action.
     In this serializer, the user and status foreign-key object is also serialized as a nested object.
     This is because we need the object details in list and retrieve.
     """
     status = StatusSerializer()
-    user = UserSerializer()
 
     class Meta:
         model = Report
-        geo_field = 'location'
         fields = '__all__'
 
 
@@ -49,7 +71,7 @@ class KmGridSerializer(GeoFeatureModelSerializer):
         model = KmGrid
         geo_field = 'geometry'
         fields = '__all__'
-        extra_kwargs = {'geometry': {'required': True}, 'population': {'required': True}}
+        auto_bbox = True
 
 
 class KmGridScoreSerializer(GeoFeatureModelSerializer):
@@ -60,4 +82,4 @@ class KmGridScoreSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = KmGridScore
         geo_field = 'geometry'
-        fields = '__all__'
+        fields = ('total_score',)
