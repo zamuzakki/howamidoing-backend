@@ -2,7 +2,7 @@ __author__ = 'zakki@kartoza.com'
 
 from django.core.management.base import BaseCommand
 from django.contrib.gis.geos import GEOSGeometry
-from project.report.models import KmGrid
+from project.report.models.km_grid import KmGrid
 import os
 import json
 

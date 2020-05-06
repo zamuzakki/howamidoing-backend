@@ -1,6 +1,8 @@
 __author__ = 'zakki@kartoza.com'
 
-from project.report.models import KmGrid, KmGridScore, Report
+from project.report.models.km_grid import KmGrid
+from project.report.models.km_grid_score import KmGridScore
+from project.report.models.report import Report
 from django.core.management.base import BaseCommand
 
 import logging
@@ -26,9 +28,7 @@ def generate_grid_score():
     # Loop each grid
     for grid in grids:
         # Query reports contained within each grid
-        grid_report = Report.objects.location_within(grid.geometry).order_by(
-            'user', '-id'
-        ).distinct('user')
+        grid_report = Report.current_objects.filter(grid=grid)
         green_report = grid_report.green_report()
         yellow_report = grid_report.yellow_report()
         red_report = grid_report.red_report()
