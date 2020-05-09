@@ -8,7 +8,7 @@ from .models.report import Report
 from .models.km_grid import KmGrid
 from .models.km_grid_score import KmGridScore
 from .models.user import User
-from .filters import KmGridFilter, KmGridScoreFilter, ReportFilter
+from .filters import KmGridFilter, KmGridScoreFilter, ReportFilter, StatusFilter
 from .serializers import StatusSerializer, ReportSerializer, ReportCreateSerializer,\
     ReportRetrieveListSerializer, UserSerializer, KmGridSerializer,\
     KmGridScoreSerializer
@@ -34,6 +34,7 @@ class StatusViewSet(mixins.RetrieveModelMixin,
     serializer_class = StatusSerializer
     queryset = Status.objects.all()
     filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = StatusFilter
 
 
 class ReportViewSet(mixins.RetrieveModelMixin,

@@ -1,9 +1,18 @@
 from rest_framework_gis.filterset import GeoFilterSet
 from rest_framework_gis.filters import GeometryFilter
 from django_filters import filters, FilterSet
+from .models.status import Status
 from .models.report import Report
 from .models.km_grid import KmGrid
 from .models.km_grid_score import KmGridScore
+
+
+class StatusFilter(FilterSet):
+    name_contains = filters.CharFilter(field_name='name', lookup_expr='icontains')
+
+    class Meta:
+        model = Status
+        fields = ['name_contains']
 
 
 class ReportFilter(FilterSet):
