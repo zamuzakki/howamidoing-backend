@@ -2,7 +2,7 @@ from django_filters import rest_framework as filters
 from rest_framework import viewsets, mixins, status
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.response import Response
-from rest_framework_gis.filters import TMSTileFilter, InBBoxFilter
+from rest_framework_gis.filters import InBBoxFilter
 from .models.status import Status
 from .models.report import Report
 from .models.km_grid import KmGrid
@@ -153,9 +153,12 @@ class KmGridScoreViewSet(mixins.RetrieveModelMixin,
     """
 
     serializer_class = KmGridScoreSerializer
+    bbox_filter_field = 'geometry'
     queryset = KmGridScore.objects.all()
-    filter_backends = (filters.DjangoFilterBackend, InBBoxFilter, TMSTileFilter)
+    filter_backends = (filters.DjangoFilterBackend, InBBoxFilter)
     filterset_class = KmGridScoreFilter
+    bbox_filter_include_overlapping = True
+    pagination_class = None
 
 
 class UserViewSet(mixins.RetrieveModelMixin,

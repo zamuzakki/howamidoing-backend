@@ -83,3 +83,4 @@ class KmGridScoreSerializer(GeoFeatureModelSerializer):
         model = KmGridScore
         geo_field = 'geometry'
         fields = ('total_score',)
+        auto_bbox = True
