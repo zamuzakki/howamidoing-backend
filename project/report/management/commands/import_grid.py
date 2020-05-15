@@ -175,6 +175,8 @@ def create_single_grid_from_features(grid):
 
     try:
         population = grid['properties']['population_count']
+        if population == 0:
+            population = 1
     except KeyError as e:
         print(e)
         return None
