@@ -158,6 +158,33 @@ class KmGridScore(models.Model):
         setattr(self, f'score_{color}', score)
         self.save()
 
+    def set_color_score_by_status(self, status):
+        if "well" in status.name:
+            self.set_color_score('green')
+        elif "supplies" in status.name:
+            self.set_color_score('yellow')
+        elif "medical" in status.name:
+            self.set_color_score('red')
+
+    def set_color_count_by_status(self, status, operation='add'):
+
+        if "well" in status.name:
+            if operation == 'add':
+                self.count_green += 1
+            if operation == 'sub':
+                self.count_green -= 1
+        elif "supplies" in status.name:
+            if operation == 'add':
+                self.count_yellow += 1
+            if operation == 'sub':
+                self.count_yellow -= 1
+        elif "medical" in status.name:
+            if operation == 'add':
+                self.count_red += 1
+            if operation == 'sub':
+                self.count_red -= 1
+        self.save()
+
     def set_total_score(self):
         total_score = status_score_km_grid(
             self.count_green,

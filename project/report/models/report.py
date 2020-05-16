@@ -1,10 +1,11 @@
 from django.contrib.gis.geos import fromstr
 from django.db import models
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 from .user import User
 from .km_grid import KmGrid
+from .km_grid_score import KmGridScore
 from .status import Status
 import logging
 
@@ -45,11 +46,6 @@ class ReportManager(models.Manager):
         geometry = fromstr(geojson_geometry_string, srid=4326)
         return self.get_queryset().filter(
             location__within=geometry
-        )
-
-    def status_contains(self, status_name):
-        return self.get_queryset().filter(
-            status__name__icontains=status_name
         )
 
     def green_report(self):
@@ -125,8 +121,51 @@ class Report(models.Model):
 
 
 @receiver(pre_save, sender=Report)
-def mark_old_report(sender, instance, **kwargs):
+def report_pre_save_signal(sender, instance, **kwargs):
     """
     Set False to previous status `current` field
     """
     Report.objects.filter(user=instance.user).update(current=False)
+
+@receiver(post_save, sender=Report)
+def report_post_save_signal(sender, instance, created, **kwargs):
+    """
+    This is the post save signal for post creation.
+    KmGridScore assuming current report's grid
+    is just the same with previous one. It's quarantine afterall.
+    :param instance: Report instance
+    """
+
+    # Only do when grid is not None
+    if instance.grid is not None:
+        grid_score, created = KmGridScore.objects.get_or_create(geometry=instance.grid.geometry)
+
+        # if grid is just created, then set its attribute
+        if created:
+            grid_score.population = instance.grid.population
+            grid_score.total_report += 1
+            grid_score.set_color_score(instance.status)
+            grid_score.set_color_count_by_status(instance.status)
+        else:
+            # if grid exists, check if the instance is the first report created by
+            # the user in that grid
+            user_report = Report.objects.filter(user=instance.user, grid=instance.grid)
+
+            # If yes, update grid attributes
+            if user_report.count() == 1:
+                grid_score.total_report += 1
+                grid_score.set_color_score(instance.status)
+                grid_score.set_color_count_by_status(instance.status)
+
+            # If no, check if current report has the same status as the previous one
+            else:
+                prev_report = user_report[1]
+
+                # If yes, we decrement the old status count in the grid and recalculate that status score
+                # Then increment the newstatus count in the grid and recalculate that status score
+                if not instance.status == prev_report.status:
+                    grid_score.set_color_score(prev_report.status)
+                    grid_score.set_color_count_by_status(prev_report.status, 'sub')
+
+                    grid_score.set_color_score(instance.status)
+                    grid_score.set_color_count_by_status(instance.status)

@@ -54,5 +54,5 @@ def generate_grid_score():
 
         if num % 50 == 0 and num > 0:
             print(f'{num} Grid Scores Inserted ')
-    
+
     print(f'-- {grids.count()} Grid Scores Inserted --')
