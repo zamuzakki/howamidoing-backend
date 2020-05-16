@@ -144,7 +144,7 @@ def report_post_save_signal(sender, instance, created, **kwargs):
         if created:
             grid_score.population = instance.grid.population
             grid_score.total_report += 1
-            grid_score.set_color_score(instance.status)
+            grid_score.set_color_score_by_status(instance.status)
             grid_score.set_color_count_by_status(instance.status)
         else:
             # if grid exists, check if the instance is the first report created by
@@ -154,7 +154,7 @@ def report_post_save_signal(sender, instance, created, **kwargs):
             # If yes, update grid attributes
             if user_report.count() == 1:
                 grid_score.total_report += 1
-                grid_score.set_color_score(instance.status)
+                grid_score.set_color_score_by_status(instance.status)
                 grid_score.set_color_count_by_status(instance.status)
 
             # If no, check if current report has the same status as the previous one
@@ -164,8 +164,8 @@ def report_post_save_signal(sender, instance, created, **kwargs):
                 # If yes, we decrement the old status count in the grid and recalculate that status score
                 # Then increment the newstatus count in the grid and recalculate that status score
                 if not instance.status == prev_report.status:
-                    grid_score.set_color_score(prev_report.status)
+                    grid_score.set_color_score_by_status(prev_report.status)
                     grid_score.set_color_count_by_status(prev_report.status, 'sub')
 
-                    grid_score.set_color_score(instance.status)
+                    grid_score.set_color_score_by_status(instance.status)
                     grid_score.set_color_count_by_status(instance.status)

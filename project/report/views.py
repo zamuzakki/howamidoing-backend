@@ -76,8 +76,6 @@ class ReportViewSet(mixins.RetrieveModelMixin,
             if grid.count() > 0:
                 request.data['grid'] = grid.first().id
 
-            print(request.data)
-
             serializer = ReportSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
         except Exception as e:
@@ -157,12 +155,22 @@ class KmGridScoreViewSet(mixins.RetrieveModelMixin,
     queryset = KmGridScore.objects.all()
     filter_backends = (filters.DjangoFilterBackend, InBBoxFilter)
     filterset_class = KmGridScoreFilter
-    bbox_filter_include_overlapping = True
-    pagination_class = None
+
+    def list(self, request, *args, **kwargs):
+        if 'no_page' in request.query_params:
+            self.pagination_class = None
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
-class UserViewSet(mixins.RetrieveModelMixin,
-                  mixins.ListModelMixin,
+class UserViewSet(mixins.ListModelMixin,
                   mixins.CreateModelMixin,
                   viewsets.GenericViewSet):
     """

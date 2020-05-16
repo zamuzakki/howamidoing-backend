@@ -1,8 +1,18 @@
 from django.contrib.gis.geos.point import Point
+from django.contrib.gis.geos import fromstr
 from faker.providers import BaseProvider
-from project.users.test.factories import UserFactory
 import factory
+import factory.fuzzy
+import json
+from django.conf import settings
 from django.utils.timezone import now
+
+class UserFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = 'report.User'
+        django_get_or_create = ('id',)
+
+    id = factory.Faker('uuid4')
 
 
 class StatusFactory(factory.django.DjangoModelFactory):
@@ -16,6 +26,23 @@ class StatusFactory(factory.django.DjangoModelFactory):
     description = factory.Sequence(lambda n: f'Description {n}')
 
 
+def get_grid_from_file(index=0):
+    with open(settings.BASE_DIR + '/../example/grid.geojson', 'r') as f:
+        content = f.read()
+        data = json.loads(content)['features']
+        return fromstr(json.dumps(data[index]['geometry']))
+
+
+class KmGridFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = 'report.KmGrid'
+        django_get_or_create = ('geometry',)
+
+    id = factory.Sequence(lambda n: n)
+    geometry = factory.Sequence(get_grid_from_file)
+    population = factory.Sequence(lambda n: n+1)
+
+
 class DjangoGeoPointProvider(BaseProvider):
     def geo_point(self, **kwargs):
         kwargs.pop('coords_only', None)
@@ -25,14 +52,13 @@ class DjangoGeoPointProvider(BaseProvider):
 
 
 class ReportFactory(factory.django.DjangoModelFactory):
-    factory.Faker.add_provider(DjangoGeoPointProvider)
-
-    class Meta:
-        model = 'report.Report'
-        django_get_or_create = ('location', 'status', 'timestamp', 'user')
 
     id = factory.Sequence(lambda n: n)
-    location = factory.Faker('geo_point')
+    grid = factory.SubFactory(KmGridFactory)
     status = factory.SubFactory(StatusFactory)
     timestamp = factory.LazyFunction(now)
     user = factory.SubFactory(UserFactory)
+
+    class Meta:
+        model = 'report.Report'
+        django_get_or_create = ('grid', 'status', 'timestamp', 'user')

@@ -29,7 +29,7 @@ class ReportCreateSerializer(serializers.Serializer):
     """
     Serializer for Status object in create action
     This serializer does not use nested status and user object, only id.
-    location is the locoation of the report,that will be mapped/converted to grid ID
+    location is the location of the report,that will be mapped/converted to grid ID
     """
     location = GeometryField()
     status = serializers.IntegerField()
