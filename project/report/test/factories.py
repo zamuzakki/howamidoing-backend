@@ -1,8 +1,10 @@
 from django.contrib.gis.geos.point import Point
 from django.contrib.gis.geos import fromstr
 from faker.providers import BaseProvider
+from ..utils.scoring_grid import color_score_km_grid, status_score_km_grid
 import factory
 import factory.fuzzy
+import random
 import json
 from django.conf import settings
 from django.utils.timezone import now
@@ -41,6 +43,31 @@ class KmGridFactory(factory.django.DjangoModelFactory):
     id = factory.Sequence(lambda n: n)
     geometry = factory.Sequence(get_grid_from_file)
     population = factory.Sequence(lambda n: n+1)
+
+
+class KmGridScoreFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = 'report.KmGridScore'
+        django_get_or_create = ('geometry',)
+
+    id = factory.Sequence(lambda n: n)
+    geometry = factory.Sequence(get_grid_from_file)
+    population = factory.LazyAttribute(lambda o: random.randrange(1, 100))
+    count_green = factory.LazyAttribute(lambda o: random.randrange(1, o.population))
+    score_green = factory.LazyAttribute(lambda o: color_score_km_grid(o.count_green, o.population, 'green'))
+    count_yellow = factory.LazyAttribute(lambda o: random.randrange(1, o.population))
+    score_yellow = factory.LazyAttribute(
+        lambda o: color_score_km_grid(o.count_yellow, o.population, 'yellow')
+    )
+    count_red = factory.LazyAttribute(lambda o: random.randrange(1, o.population))
+    score_red = factory.LazyAttribute(lambda o: color_score_km_grid(o.count_red, o.population, 'red'))
+    total_report = factory.LazyAttribute(lambda o: o.count_green + o.count_yellow + o.count_red)
+    total_score = factory.LazyAttribute(lambda o: status_score_km_grid(
+        o.count_green,
+        o.count_yellow,
+        o.count_red,
+        o.population
+    ))
 
 
 class DjangoGeoPointProvider(BaseProvider):

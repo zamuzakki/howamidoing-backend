@@ -1,7 +1,6 @@
-from contextlib import redirect_stdout
 from django.urls import reverse
 from django.conf import settings
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import GEOSGeometry, Polygon
 from django.contrib.gis.db.models.functions import Centroid
 from django.core.paginator import Paginator
 from nose.tools import eq_
@@ -12,13 +11,13 @@ from project.report.models.status import Status
 from project.report.models.user import User
 from project.report.models.report import Report
 from project.report.models.km_grid import KmGrid
+from project.report.models.km_grid_score import KmGridScore
 from .factories import StatusFactory, ReportFactory, UserFactory, KmGridFactory
 from project.users.test.factories import UserAdminFactory
-from project.report.management.commands.import_grid import read_local_file, check_json_loadable, \
-    check_geojson_loadable, check_path_exist_and_is_file, \
-    import_grid_from_geojson
+from project.report.management.commands.import_grid import import_grid_from_geojson
+from project.report.management.commands.generate_grid_score import generate_grid_score
+
 import factory
-import io
 import json
 
 fake = Faker()
@@ -212,8 +211,8 @@ class TestReportBaseClass(APITestCase):
         cls.report_1 = ReportFactory(user=cls.user_1)
         cls.report_2 = ReportFactory(user=cls.user_2)
 
-        cls.grid_1 = cls.report_1.grid
-        cls.centroid_1 = KmGrid.objects.filter(id=cls.grid_1.id).\
+        cls.grid_score_1 = cls.report_1.grid
+        cls.centroid_1 = KmGrid.objects.filter(id=cls.grid_score_1.id).\
             annotate(centroid=Centroid('geometry'))[0].centroid
 
         cls.report_1_json = {
@@ -228,8 +227,8 @@ class TestReportBaseClass(APITestCase):
             "user": cls.user_1.id,
         }
 
-        cls.grid_2 = cls.report_2.grid
-        cls.centroid_2 = KmGrid.objects.filter(id=cls.grid_2.id).\
+        cls.grid_score_2 = cls.report_2.grid
+        cls.centroid_2 = KmGrid.objects.filter(id=cls.grid_score_2.id).\
             annotate(centroid=Centroid('geometry'))[0].centroid
         cls.report_2_json = {
             "location": {
@@ -428,8 +427,6 @@ class TestKmGridListTestCase(TestKmGridBaseClass):
         Response grid-code should be 200 OK and showing filtered results.
         """
         params = {
-            "max_population": 100,
-            "min_population": 90,
             "contains_geom": {
                 "type": "Point",
                 "coordinates": [
@@ -438,21 +435,21 @@ class TestKmGridListTestCase(TestKmGridBaseClass):
                 ]
             }
         }
-        param = f"?max_population={params['max_population']}&" + \
-            f"min_population={params['min_population']}&" + \
-            f"contains_geom={json.dumps(params['contains_geom'])}"
 
+        param = f"?contains_geom={json.dumps(params['contains_geom'])}"
         response = self.client.get(self.url + param)
         eq_(response.status_code, http_status.HTTP_200_OK)
 
         filtered_grid = KmGrid.objects.filter(
-            population__gte=params['min_population'],
-            population__lte=params['max_population'],
             geometry__contains=GEOSGeometry(
                 json.dumps(params['contains_geom']),
             )
         )
         eq_(response.data['count'], filtered_grid.count())
+        grid = response.data['results']['features'][0]
+        grid_geom = GEOSGeometry(json.dumps(grid['geometry']))
+        eq_(grid_geom, self.grid_1.geometry)
+        eq_(grid['properties']['population'], self.grid_1.population)
 
 
 class TestKmGridDetailTestCase(TestKmGridBaseClass):
@@ -478,7 +475,7 @@ class TestKmGridDetailTestCase(TestKmGridBaseClass):
         Retrieve self KmGrid details as admin user.
         Response status-code should be 200 OK.
         """
-        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_1.id})
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_score_1.id})
         response = self.get_request_with_data(url)
 
         eq_(response.status_code, http_status.HTTP_200_OK)
@@ -488,226 +485,178 @@ class TestKmGridDetailTestCase(TestKmGridBaseClass):
         Retrieve self KmGrid details as regular user.
         Response status-code should be 200 OK.
         """
-        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_1.id})
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_score_1.id})
         response = self.client.get(url, format='json')
         eq_(response.status_code, http_status.HTTP_200_OK)
 
 
-class TestKmGridImport(APITestCase):
+class TestKmGridScoreBaseClass(APITestCase):
     """
-    TestCase for KmGrid import using command and admin page
+    Base Class for KmGridScore test case.
     """
 
+    def setUpTestData(cls):
+        """
+        Set base data for all test case
+        """
+        cls.user_admin = UserAdminFactory()
+
+        cls.valid_file_path = f'{settings.BASE_DIR}/../example/grid.geojson'
+        import_grid_from_geojson(cls.valid_file_path)
+        generate_grid_score()
+
+        cls.grid_score_1 = KmGridScore.objects.all().first()
+        cls.centroid_1 = KmGridScore.objects.filter(id=cls.grid_score_1.id).\
+            annotate(centroid=Centroid('geometry'))[0].centroid
+        cls.grid_score_2 = KmGridScore.objects.all().last()
+        cls.centroid_2 = KmGridScore.objects.filter(id=cls.grid_score_2.id).\
+            annotate(centroid=Centroid('geometry'))[0].centroid
+
+        cls.bbox = [107.42946624755861, -6.827265476865927, 107.82085418701173, -6.990182112864024]
+
+    def set_user_admin_credential(self):
+        """
+        Set user_admin credential.
+        """
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.user_admin.auth_token}')
+
+
+class TestKmGridScoreListTestCase(TestKmGridScoreBaseClass):
+    """
+    Tests /grid-score list operations.
+    """
     @classmethod
-    def setUpTestData(self):
+    def setUpTestData(cls):
         """
-        Setup initial testdata
+        Before TestCase is run, set some data.
         """
-        self.admin = UserAdminFactory
-        self.valid_file_path = f'{settings.BASE_DIR}/../example/grid.geojson'
-        self.invalid_file_path = f'{settings.BASE_DIR}/../example/grid.json'
-        self.valid_dir_path = f'{settings.BASE_DIR}/../example'
-        self.invalid_dir_path = f'{settings.BASE_DIR}/../examples'
-        self.valid_path_invalid_json = f'{settings.BASE_DIR}/../requirements.txt'
+        return super().setUpTestData(cls)
 
-        self.valid_geojson = {
-            "name": "grid",
-            "crs": {
-                "type": "name",
-                "properties": {
-                    "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
-                }
-            },
-            "type": "FeatureCollection",
-            "features": [
-                {
-                    "type": "Feature",
-                    "properties": {
-                        "population_count": 90.0
-                    },
-                    "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [
-                            [
-                                [18.40417142576775, -33.922105319969859],
-                                [18.413154578608943, -33.922105319969859],
-                                [18.413154578608943, -33.929559187481644],
-                                [18.40417142576775, -33.929559187481644],
-                                [18.40417142576775, -33.922105319969859]
-                            ]
-                        ]
-                    }
-                }
-            ]
-        }
-        self.valid_json_invalid_geojson = {
-            "name": "grid",
-            "type": "FeatureCollection"
-        }
-        self.valid_geojson_string = json.dumps(self.valid_geojson)
-        self.valid_json_invalid_geojson_string = json.dumps(self.valid_json_invalid_geojson)
-        self.invalid_json_string = "It is not valid"
+    def setUp(self):
+        """
+        Set data for this test case.
+        """
+        self.url = reverse('kmgridscore-list')
 
-    def login(self):
+    def test_list_grid_score_succeeds_as_regular_user(self):
         """
-        Method for login
+        List KmGridScore as regular user.
+        Response grid-code should be 200 OK.
         """
-        self.client.login(email=self.admin.email, password=self.admin.password)
-
-    def test_valid_file_path(self):
-        """
-        Test check_path_exist_and_is_file function.
-        Should return True if path exists and is a file.
-        Expected True because the path used to test exists and is a file.
-        """
-        eq_(check_path_exist_and_is_file(self.valid_file_path), True)
-
-    def test_invalid_file_path(self):
-        """
-        Test check_path_exist_and_is_file function.
-        Should return True if path exists and is a file.
-        Expected False because the path used to test does not exist.
-        """
-        eq_(check_path_exist_and_is_file(self.invalid_file_path), False)
-
-    def test_valid_directory_path(self):
-        """
-        Test check_path_exist_and_is_file function.
-        Should return True if path exists and is a file.
-        Expected False because the path used to test exists but it is not a file.
-        """
-        eq_(check_path_exist_and_is_file(self.invalid_file_path), False)
-
-    def test_invalid_directory_path(self):
-        """
-        Test check_path_exist_and_is_file function.
-        Should return True if path exists and is a file.
-        Expected False because the path used to test does not exist and is not a file.
-        """
-        eq_(check_path_exist_and_is_file(self.invalid_file_path), False)
-
-    def test_valid_json_string(self):
-        """
-        Test check_json_loadable function.
-        Should return (True, parsed_data) if the string can be parsed to JSON.
-        Expected (True, parsed_data) because the the test string is JSON parsable.
-        """
-        eq_(check_json_loadable(self.valid_geojson_string)[0], True)
-        eq_(check_json_loadable(self.valid_geojson_string)[1], self.valid_geojson)
-        eq_(check_json_loadable(self.valid_json_invalid_geojson_string)[0], True)
-        eq_(check_json_loadable(self.valid_json_invalid_geojson_string)[1], self.valid_json_invalid_geojson)
-
-    def test_invalid_json_string(self):
-        """
-        Test check_json_loadable function.
-        Should return (True, parsed_data) if the string can be parsed to JSON.
-        Expected (False, {}) because the the test string is not JSON parsable.
-        """
-        is_json, parsed_data = check_json_loadable(self.invalid_json_string)
-        eq_(is_json, False)
-        eq_(parsed_data, {})
-
-    def test_valid_geojson(self):
-        """
-        Test check_geojson_loadable function.
-        Should return (True, parsed_data) if the JSON is a GeoJSON.
-        Expected (True, parsed_data) because the the test JSON is a GeoJSON.
-        """
-        eq_(check_geojson_loadable(self.valid_geojson)[0], True)
-
-    def test_invalid_geojson(self):
-        """
-        Test check_geojson_loadable function.
-        Should return (True, parsed_data) if the JSON is a GeoJSON.
-        Expected (False, parsed_data) because the the test JSON is not a GeoJSON.
-        """
-        eq_(check_geojson_loadable(self.valid_json_invalid_geojson)[0], True)
-
-    def test_import_grid_from_invalid_path(self):
-        """
-        Test import_grid_from_geojson function using invalid path.
-        Expected 'File does not exist or path is not a file!' in the console output.
-        """
-        f = io.StringIO()
-        with redirect_stdout(f):
-            import_grid_from_geojson(self.invalid_file_path)
-        output = f.getvalue()
-        message = 'File does not exist or path is not a file!'
-        eq_(message in output, True)
-
-    def test_import_grid_from_valid_path_invalid_json(self):
-        """
-        Test import_grid_from_geojson function using valid path but invalid JSON.
-        Expected 'File is not a JSON file.' in the console output.
-        """
-        f = io.StringIO()
-        with redirect_stdout(f):
-            import_grid_from_geojson(self.valid_path_invalid_json)
-        output = f.getvalue()
-        message = 'File is not a JSON file.'
-        eq_(message in output, True)
-
-    def test_import_grid_from_valid_path_valid_geojson(self):
-        """
-        Test import_grid_from_geojson function using valid path and valid GeoJSON.
-        Expected 'Valid GEOJSON file! Inserting KmGrid.' in the console output and
-            saved grid equals features length in GeoJSON.
-        """
-        f = io.StringIO()
-        with redirect_stdout(f):
-            import_grid_from_geojson(self.valid_file_path)
-        output = f.getvalue()
-        message = 'Valid GEOJSON file! Inserting KmGrid.'
-        eq_(message in output, True)
-
-        grid_count = KmGrid.objects.count()
-        _, geojson = check_geojson_loadable(
-            check_json_loadable(
-                read_local_file(f'{settings.BASE_DIR}/../example/grid.geojson')
-            )[1]
-        )
-        eq_(grid_count, len(geojson['features']))
-
-    def test_url_to_import_kmgrid_can_be_opened(self):
-        """
-        Test Import KmGrid page can be opened in admin page.
-        """
-        self.login()
-        response = self.client.get('/admin/report/kmgrid/import-geojson/', follow=True)
+        response = self.client.get(self.url, {'page': 1})
         eq_(response.status_code, http_status.HTTP_200_OK)
 
-    def test_url_to_import_kmgrid_function_valid_file(self):
+    def test_list_grid_grid_succeeds_as_admin_user(self):
         """
-        Test Import KmGrid function using correct GeoJSON file.
+        List KmGridScore as regular user.
+        Response grid-code should be 200 OK and the length should be the same between reponse and queryset.
         """
-        self.login()
-        with open(self.valid_file_path) as fp:
-            response = self.client.post(
-                '/admin/report/kmgrid/import-geojson/',
-                {'file': fp},
-                follow=True
-            )
-            eq_(response.status_code, http_status.HTTP_200_OK)
-            self.assertContains(response, 'Your GEOJSON file has been imported')
+        self.set_user_admin_credential()
+        response = self.client.get(self.url, {'page': 1})
+        eq_(response.status_code, http_status.HTTP_200_OK)
 
-            grid_count = KmGrid.objects.count()
-            _, geojson = check_geojson_loadable(
-                check_json_loadable(
-                    read_local_file(f'{settings.BASE_DIR}/../example/grid.geojson')
-                )[1]
-            )
-            eq_(grid_count, len(geojson['features']))
+        grid_score_qs = KmGridScore.objects.all()
+        grid_score_qs_page_1 = Paginator(grid_score_qs, 1)
+        eq_(response.data.get('count'), grid_score_qs_page_1.count)
 
-    def test_url_to_import_kmgrid_function_invalid_file(self):
+    def test_filter_contains_geom_succeeds(self):
         """
-        Test Import KmGrid function using non JSON file.
+        Filter KmGridScore with parameter contains geom.
+        Response grid-code should be 200 OK and showing filtered results.
         """
-        self.login()
-        with open(self.valid_path_invalid_json) as fp:
-            response = self.client.post(
-                '/admin/report/kmgrid/import-geojson/',
-                {'file': fp},
-                follow=True
+        params = {
+            "contains_geom": {
+                "type": "Point",
+                "coordinates": [
+                    self.centroid_1.x,
+                    self.centroid_1.y
+                ]
+            }
+        }
+
+        param = f"?contains_geom={json.dumps(params['contains_geom'])}"
+        response = self.client.get(self.url + param)
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+        filtered_grid_score = KmGridScore.objects.filter(
+            geometry__contains=GEOSGeometry(
+                json.dumps(params['contains_geom']),
             )
-            eq_(response.status_code, http_status.HTTP_200_OK)
-            self.assertContains(response, 'File is not a JSON file.')
+        )
+        eq_(response.data['count'], filtered_grid_score.count())
+        grid_score = response.data['results']['features'][0]
+        grid_score_geom = GEOSGeometry(json.dumps(grid_score['geometry']))
+        eq_(grid_score_geom, self.grid_score_1.geometry)
+        eq_(float(grid_score['properties']['total_score']), float(self.grid_score_1.total_score))
+
+    def test_filter_overlaps_bbox_paginated_succeeds(self):
+        """
+        Filter KmGridScore with parameter in_bbox, with pagination .
+        Response grid-code should be 200 OK and showing filtered results of maximum 100 data per page.
+        """
+        param = f"?in_bbox={','.join([str(x) for x in self.bbox])}"
+        response = self.client.get(self.url + param)
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+        filtered_grid_score = KmGridScore.objects.filter(
+            geometry__bboverlaps=Polygon.from_bbox(self.bbox)
+        )
+
+        eq_(response.data['count'], filtered_grid_score.count())
+
+        grid_score_page_1 = response.data['results']['features']
+        eq_(len(grid_score_page_1), 100)
+
+    def test_filter_overlaps_bbox_not_paginated_succeeds(self):
+        """
+        Filter KmGridScore with parameter in_bbox, without pagination .
+        Response grid-code should be 200 OK and showing all results.
+        """
+        param = f"?in_bbox={','.join([str(x) for x in self.bbox])}&no_page"
+        response = self.client.get(self.url + param)
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+        filtered_grid_score = KmGridScore.objects.filter(
+            geometry__bboverlaps=Polygon.from_bbox(self.bbox)
+        )
+
+        grid_score_page_1 = response.data['features']
+        eq_(len(grid_score_page_1), filtered_grid_score.count())
+
+
+class TestKmGridScoreDetailTestCase(TestKmGridScoreBaseClass):
+    """
+    Tests /grid-score detail operations.
+    """
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Before TestCase is run, set some data.
+        """
+        return super().setUpTestData(cls)
+
+    def get_request_with_data(self, url):
+        """
+        Send POST request with data to defined URL.
+        """
+        response = self.client.get(url, format='json')
+        return response
+
+    def test_retrieve_grid_succeeds_as_admin_user(self):
+        """
+        Retrieve self KmGridScore details as admin user.
+        Response status-code should be 200 OK.
+        """
+        url = reverse('kmgridscore-detail', kwargs={'pk': self.grid_score_1.id})
+        response = self.get_request_with_data(url)
+
+        eq_(response.status_code, http_status.HTTP_200_OK)
+
+    def test_retrieve_grid_succeeds_as_regular_user(self):
+        """
+        Retrieve self KmGridScore details as regular user.
+        Response status-code should be 200 OK.
+        """
+        url = reverse('kmgridscore-detail', kwargs={'pk': self.grid_score_1.id})
+        response = self.client.get(url, format='json')
+        eq_(response.status_code, http_status.HTTP_200_OK)
