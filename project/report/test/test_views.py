@@ -63,7 +63,7 @@ class TestStatusListTestCase(TestStatusBaseClass):
     def test_list_status_succeeds_as_regular_user(self):
         """
         List Status as regular user.
-        Response status-code should be 200 OK and the length should be the same between reponse and queryset.
+        Response status-code should be 200 OK and the length should be the same between response and queryset.
         """
         response = self.client.get(self.url, {'page': 1})
         eq_(response.status_code, http_status.HTTP_200_OK)
@@ -202,19 +202,14 @@ class TestReportBaseClass(APITestCase):
         Set base data for all test case
         """
         cls.user_1 = UserFactory()
-        cls.user_2 = UserFactory()
         cls.user_admin = UserAdminFactory()
 
         cls.status_1 = StatusFactory()
         cls.status_2 = StatusFactory()
 
-        cls.report_1 = ReportFactory(user=cls.user_1)
-        cls.report_2 = ReportFactory(user=cls.user_2)
-
-        cls.grid_score_1 = cls.report_1.grid
-        cls.centroid_1 = KmGrid.objects.filter(id=cls.grid_score_1.id).\
+        cls.grid_1 = KmGridFactory()
+        cls.centroid_1 = KmGrid.objects.filter(id=cls.grid_1.id).\
             annotate(centroid=Centroid('geometry'))[0].centroid
-
         cls.report_1_json = {
             "location": {
                 "type": "Point",
@@ -227,8 +222,8 @@ class TestReportBaseClass(APITestCase):
             "user": cls.user_1.id,
         }
 
-        cls.grid_score_2 = cls.report_2.grid
-        cls.centroid_2 = KmGrid.objects.filter(id=cls.grid_score_2.id).\
+        cls.grid_2 = KmGridFactory()
+        cls.centroid_2 = KmGrid.objects.filter(id=cls.grid_2.id).\
             annotate(centroid=Centroid('geometry'))[0].centroid
         cls.report_2_json = {
             "location": {
@@ -239,8 +234,10 @@ class TestReportBaseClass(APITestCase):
                 ]
             },
             "status": cls.status_2.id,
-            "user": cls.user_2.id,
+            "user": cls.user_1.id,
         }
+
+        cls.report_3 = ReportFactory()
 
     def set_user_admin_credential(self):
         """
@@ -253,6 +250,9 @@ class TestReportListTestCase(TestReportBaseClass):
     """
     Tests /report list operations.
     """
+
+    data = dict()
+
     @classmethod
     def setUpTestData(cls):
         """
@@ -284,14 +284,25 @@ class TestReportListTestCase(TestReportBaseClass):
     def test_create_self_report_with_valid_data_succeeds_as_regular_user(self):
         """
         Create new Report using post request with valid data as regular user.
-        Response status-code should be 201 Created the length should be the same between reponse and queryset.
+        Then, we create another report for the user. It should mark the first report as non current.
+        Response status-code should be 201 Created and the attributes should match.
         """
         response = self.post_request_with_data(self.report_1_json)
+        report_1 = response.data
         eq_(response.status_code, http_status.HTTP_201_CREATED)
 
         report = Report.objects.get(pk=response.data['id'])
         eq_(report.user.id, response.data['user'])
         eq_(report.status.id, response.data['status'])
+        eq_(response.data['current'], True)
+        eq_(report.current, True)
+
+        # Create new report fot the user
+        self.post_request_with_data(self.report_2_json)
+
+        # Previous report `current` field must be False
+        report_1 = Report.objects.get(id=report_1['id'])
+        eq_(report_1.current, False)
 
     def test_list_report_fails_as_regular_user(self):
         """
@@ -345,7 +356,7 @@ class TestReportDetailTestCase(TestReportBaseClass):
         Retrieve self Report details.
         Response status-code should be 200 OK.
         """
-        url = reverse('report-detail', kwargs={'pk': self.report_1.id})
+        url = reverse('report-detail', kwargs={'pk': self.report_3.id})
         response = self.get_request_with_data(url)
 
         eq_(response.status_code, http_status.HTTP_200_OK)
@@ -475,7 +486,7 @@ class TestKmGridDetailTestCase(TestKmGridBaseClass):
         Retrieve self KmGrid details as admin user.
         Response status-code should be 200 OK.
         """
-        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_score_1.id})
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_1.id})
         response = self.get_request_with_data(url)
 
         eq_(response.status_code, http_status.HTTP_200_OK)
@@ -485,7 +496,7 @@ class TestKmGridDetailTestCase(TestKmGridBaseClass):
         Retrieve self KmGrid details as regular user.
         Response status-code should be 200 OK.
         """
-        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_score_1.id})
+        url = reverse('kmgrid-detail', kwargs={'pk': self.grid_1.id})
         response = self.client.get(url, format='json')
         eq_(response.status_code, http_status.HTTP_200_OK)
 
@@ -505,11 +516,11 @@ class TestKmGridScoreBaseClass(APITestCase):
         import_grid_from_geojson(cls.valid_file_path)
         generate_grid_score()
 
-        cls.grid_score_1 = KmGridScore.objects.all().first()
-        cls.centroid_1 = KmGridScore.objects.filter(id=cls.grid_score_1.id).\
+        cls.grid_1 = KmGridScore.objects.all().first()
+        cls.centroid_1 = KmGridScore.objects.filter(id=cls.grid_1.id).\
             annotate(centroid=Centroid('geometry'))[0].centroid
-        cls.grid_score_2 = KmGridScore.objects.all().last()
-        cls.centroid_2 = KmGridScore.objects.filter(id=cls.grid_score_2.id).\
+        cls.grid_2 = KmGridScore.objects.all().last()
+        cls.centroid_2 = KmGridScore.objects.filter(id=cls.grid_2.id).\
             annotate(centroid=Centroid('geometry'))[0].centroid
 
         cls.bbox = [107.42946624755861, -6.827265476865927, 107.82085418701173, -6.990182112864024]
@@ -586,8 +597,8 @@ class TestKmGridScoreListTestCase(TestKmGridScoreBaseClass):
         eq_(response.data['count'], filtered_grid_score.count())
         grid_score = response.data['results']['features'][0]
         grid_score_geom = GEOSGeometry(json.dumps(grid_score['geometry']))
-        eq_(grid_score_geom, self.grid_score_1.geometry)
-        eq_(float(grid_score['properties']['total_score']), float(self.grid_score_1.total_score))
+        eq_(grid_score_geom, self.grid_1.geometry)
+        eq_(float(grid_score['properties']['total_score']), float(self.grid_1.total_score))
 
     def test_filter_overlaps_bbox_paginated_succeeds(self):
         """
@@ -647,7 +658,7 @@ class TestKmGridScoreDetailTestCase(TestKmGridScoreBaseClass):
         Retrieve self KmGridScore details as admin user.
         Response status-code should be 200 OK.
         """
-        url = reverse('kmgridscore-detail', kwargs={'pk': self.grid_score_1.id})
+        url = reverse('kmgridscore-detail', kwargs={'pk': self.grid_1.id})
         response = self.get_request_with_data(url)
 
         eq_(response.status_code, http_status.HTTP_200_OK)
@@ -657,6 +668,6 @@ class TestKmGridScoreDetailTestCase(TestKmGridScoreBaseClass):
         Retrieve self KmGridScore details as regular user.
         Response status-code should be 200 OK.
         """
-        url = reverse('kmgridscore-detail', kwargs={'pk': self.grid_score_1.id})
+        url = reverse('kmgridscore-detail', kwargs={'pk': self.grid_1.id})
         response = self.client.get(url, format='json')
         eq_(response.status_code, http_status.HTTP_200_OK)

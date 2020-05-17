@@ -17,6 +17,7 @@ class UserFactory(factory.django.DjangoModelFactory):
     id = factory.Faker('uuid4')
 
 
+STATUS_NAME = ['All Well Here', 'Need Food or Supplies', 'Need Medical Help']
 class StatusFactory(factory.django.DjangoModelFactory):
 
     class Meta:
@@ -24,7 +25,7 @@ class StatusFactory(factory.django.DjangoModelFactory):
         django_get_or_create = ('name', 'description',)
 
     id = factory.Sequence(lambda n: n)
-    name = factory.Sequence(lambda n: f'Status {n}')
+    name = factory.fuzzy.FuzzyChoice(STATUS_NAME)
     description = factory.Sequence(lambda n: f'Description {n}')
 
 
