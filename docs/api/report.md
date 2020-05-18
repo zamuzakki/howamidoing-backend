@@ -8,11 +8,11 @@ Some implementation might be unused by the howamidoing-frontend, e.g. deleting/u
 
 `POST` `/api/v1/report/`
 
-Parameters:
+Payload Parameters:
 
 Name      | Type    | Required  | Description
 ----------|---------|-----------|------------
-location  | string  | Yes       | The GeoJSON point string coordinate for the new report.
+location  | string  | Yes       | The GeoJSON Point Geometry string for the new report.
 status    | integer | Yes       | The status ID for the new report.
 user      | string  | Yes       | The user ID for the new report.
 
@@ -60,7 +60,7 @@ Content-Type application/json
 
 `GET` `/api/v1/report/:id/`
 
-Parameters:
+URL Parameters:
 - id: ID of the report
 
 *Note:*
@@ -107,7 +107,7 @@ Content-Type application/json
 
 `GET` `/api/v1/report/?page={page}`
 
-Parameters:
+Query Parameters:
 - page: A page number within the paginated result set.
 
 *Note:*
@@ -164,18 +164,19 @@ Content-Type application/json
 
 `PUT/PATCH` `/api/v1/report/:id/`
 
-Parameters:
+URL Parameters:
 - id: ID of the report
 
-Parameters:
-
+Payload Parameter:
 Name      | Type    | Required  | Description
 ----------|---------|-----------|------------
-location  | string  | Yes       | The GeoJSON point string coordinate for the new report.
+location  | string  | Yes       | The GeoJSON Point Geometry string for the new report.
 status    | integer | Yes       | The status ID for the new report.
 user      | string  | Yes       | The user ID for the new report.
 
 *Note:*
+
+- The fields are required for PUT or update, optional for PATCH or partial update
 
 - **[Authorization Protected, Admin/Owner Only](authentication.md)**
 

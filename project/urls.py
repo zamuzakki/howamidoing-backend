@@ -8,14 +8,15 @@ from rest_framework.authtoken import views
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from .users.views import UserViewSet
-from project.report.views import StatusViewSet, ReportViewSet, KmGridViewSet
+from project.report.views import StatusViewSet, ReportViewSet, KmGridViewSet,\
+    KmGridScoreViewSet, UserViewSet
 
 router = DefaultRouter()
-router.register(r'users', UserViewSet)
 router.register(r'status', StatusViewSet)
 router.register(r'report', ReportViewSet)
 router.register(r'grid', KmGridViewSet)
+router.register(r'grid-score', KmGridScoreViewSet)
+router.register(r'user', UserViewSet)
 
 schema_view = get_schema_view(
     openapi.Info(

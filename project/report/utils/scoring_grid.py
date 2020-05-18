@@ -25,7 +25,7 @@ def status_score_km_grid(
         user_report_green=0,
         user_report_yellow=0,
         user_report_red=0,
-        population=0,
+        population=1,
         error_allowed=0.0,
         estimated_respondent=0.1):
     """
@@ -35,7 +35,7 @@ def status_score_km_grid(
     user_report_green : count of green report in grid
     user_report_yellow : count of yellow report in grid
     user_report_red : count of red report in grid
-    population_1 : number of ppulation in grid
+    population : number of ppulation in grid
     error_allowed : minimum percentage respondent of population_1 required
     estimated_respondent : estimated percentage respondent of population_1
 
@@ -54,6 +54,8 @@ def status_score_km_grid(
 
     return type :: integer
     """
+    if population == 0:
+        population = 1
     number_of_sample = user_report_green + user_report_yellow + user_report_red
 
     if population <= 0:

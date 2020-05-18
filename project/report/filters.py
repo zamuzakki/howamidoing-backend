@@ -1,7 +1,27 @@
 from rest_framework_gis.filterset import GeoFilterSet
 from rest_framework_gis.filters import GeometryFilter
-from django_filters import filters
-from .models import KmGrid
+from django_filters import filters, FilterSet
+from .models.status import Status
+from .models.report import Report
+from .models.km_grid import KmGrid
+from .models.km_grid_score import KmGridScore
+
+
+class StatusFilter(FilterSet):
+    name_contains = filters.CharFilter(field_name='name', lookup_expr='icontains')
+
+    class Meta:
+        model = Status
+        fields = ['name_contains']
+
+
+class ReportFilter(FilterSet):
+    current = filters.BooleanFilter(field_name='current')
+    user = filters.CharFilter(field_name='user')
+
+    class Meta:
+        model = Report
+        fields = ['current']
 
 
 class KmGridFilter(GeoFilterSet):
@@ -12,3 +32,13 @@ class KmGridFilter(GeoFilterSet):
     class Meta:
         model = KmGrid
         fields = ['max_population', 'min_population', 'contains_geom']
+
+
+class KmGridScoreFilter(KmGridFilter):
+    total_score = filters.NumberFilter(field_name='total_score')
+    min_total_report = filters.NumberFilter(field_name='total_report', lookup_expr='gte')
+    max_total_report = filters.NumberFilter(field_name='total_report', lookup_expr='lte')
+
+    class Meta:
+        model = KmGridScore
+        fields = KmGridFilter.Meta.fields + ['total_score', 'min_total_report', 'max_total_report']

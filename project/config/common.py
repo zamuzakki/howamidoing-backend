@@ -25,6 +25,7 @@ class Common(Configuration):
         'drf_yasg',                  # swagger UI for rest framework
         'leaflet',                   # Djanfo Leaflet to show map
         'django_crontab',            # package for cron job
+        'corsheaders',               # for CORS settings
 
         # Your apps
         'project.users',
@@ -33,6 +34,7 @@ class Common(Configuration):
 
     # https://docs.djangoproject.com/en/2.0/topics/http/middleware/
     MIDDLEWARE = (
+        'corsheaders.middleware.CorsMiddleware',
         'django.middleware.security.SecurityMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.middleware.common.CommonMiddleware',
@@ -197,7 +199,7 @@ class Common(Configuration):
             'rest_framework.renderers.BrowsableAPIRenderer',
         ),
         'DEFAULT_PERMISSION_CLASSES': [
-            'rest_framework.permissions.IsAuthenticated',
+            'rest_framework.permissions.AllowAny',
         ],
         'DEFAULT_AUTHENTICATION_CLASSES': (
             'rest_framework.authentication.SessionAuthentication',
@@ -222,7 +224,11 @@ class Common(Configuration):
     # Django Crontab settings
     CRONJOBS = [
         (
-            '08 22 * * *',
+            '59 23 */3 * *',
             'project.report.cron.auto_revert_status_to_all_well_here',
+        ),
+        (
+            '1 0 * * *',
+            'project.report.cron.auto_generate_grid_score',
         )
     ]

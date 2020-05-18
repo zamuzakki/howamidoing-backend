@@ -1,11 +1,16 @@
 from .models import Report, Status
 from django.utils import timezone
-
+from .management.commands.generate_grid_score import generate_grid_score
 
 def auto_revert_status_to_all_well_here():
-    last_report_qs = Report.objects.all().order_by('user', '-id').distinct('user')
+    """
+    Auto revert user status to 'All Well Here' if there is no update for 3 days
+    """
+    last_report_qs = Report.objects.all().order_by('user', '-id').distinct(
+        'user'
+    ).select_related('status')
     for report in last_report_qs:
-        if (report.timestamp - timezone.now()).days >= 3:
+        if (report.timestamp - timezone.now()).days >= 3 and 'well' not in report.status.name.lower():
             try:
                 new_report = Report.objects.create(
                     location=report.location,
@@ -21,3 +26,9 @@ def auto_revert_status_to_all_well_here():
                 )
 
             new_report.save()
+
+def auto_generate_grid_score():
+    """
+    Automatically generate KmGridScore every night
+    """
+    generate_grid_score()

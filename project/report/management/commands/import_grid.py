@@ -2,7 +2,7 @@ __author__ = 'zakki@kartoza.com'
 
 from django.core.management.base import BaseCommand
 from django.contrib.gis.geos import GEOSGeometry
-from project.report.models import KmGrid
+from project.report.models.km_grid import KmGrid
 import os
 import json
 
@@ -51,7 +51,13 @@ def import_grid_from_geojson(file_path):
             is_geojson, geojson_data = check_geojson_loadable(json_data)
             if is_geojson:
                 print("Valid GEOJSON file! Inserting KmGrid.")
-                loop_geojson(geojson_data)
+                result = loop_geojson(geojson_data)
+                print('Imported {}/{} ({})'.format(
+                    result[0],
+                    result[1],
+                    (result[0]/result[1])/100
+                )
+                )
             else:
                 print('File is not a GEOJSON file.')
         else:
@@ -140,7 +146,7 @@ def check_geojson_loadable(json_data):
     """
     if type(json_data) != dict:
         return False, json_data
-    elif all(field in ['name', 'type', 'crs', 'features'] for field in json_data.keys()):
+    elif all(field in ['type', 'features', 'name', 'crs'] for field in json_data.keys()):
         return True, json_data
     else:
         return False, json_data
@@ -149,18 +155,40 @@ def loop_geojson(geojson_data):
     """
     Loop GeoJSON and call function to create grid
     """
-    for i, grid in enumerate(geojson_data['features']):
-        create_single_grid_from_features(grid)
+    created_object = 0
+    for grid in geojson_data['features']:
+        grid = create_single_grid_from_features(grid)
+        if grid is not None:
+            created_object += 1
+
+    return(created_object, len(geojson_data['features']))
 
 def create_single_grid_from_features(grid):
     """
     Create single grid based on single GeoJSON object
     """
-    geometry = GEOSGeometry(str(grid['geometry']))
-    population = grid['properties']['population_count']
-    grid = KmGrid.objects.create(
-        geometry=geometry,
-        population=population
-    )
-    grid.save()
+    try:
+        geometry = GEOSGeometry(str(grid['geometry']))
+    except KeyError as e:
+        print(e)
+        return None
+
+    try:
+        population = grid['properties']['population_count']
+        if population == 0:
+            population = 1
+    except KeyError as e:
+        print(e)
+        return None
+
+    try:
+        grid = KmGrid.objects.create(
+            geometry=geometry,
+            population=population
+        )
+        grid.save()
+    except Exception as e:
+        print(e)
+        return None
+
     return grid
