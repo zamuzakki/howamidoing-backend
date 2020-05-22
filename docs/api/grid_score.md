@@ -11,10 +11,6 @@ Supports viewing and listing grid-score score.
 URL Parameters:
 - id: ID of the grid-score
 
-*Note:*
-
-- **[Authorization Protected](authentication.md)**
-
 **Response**:
 
 ```json
@@ -52,14 +48,6 @@ Content-Type application/json
     ]
   },
   "properties": {
-    "score_green": "0.00",
-    "count_green": 0,
-    "score_yellow": "0.00",
-    "count_yellow": 0,
-    "score_red": "0.00",
-    "count_red": 1,
-    "population": 90,
-    "total_report": 1,
     "total_score": "1.00"
   }
 }
@@ -83,11 +71,6 @@ min_total_report  | integer | Minimum number of report in the grid-score
 total_score       | integer | Total score the grid-score (0=green, 1=yellow, 2=red)
 contains_geom     | string  | GeoJSON Geometry string representing geometry inside the grid-score
 
-
-*Note:*
-
-- **[Authorization Protected](authentication.md)**
-
 **Response**:
 
 ```json
@@ -125,14 +108,6 @@ Content-Type application/json
     ]
   },
   "properties": {
-    "score_green": "0.00",
-    "count_green": 0,
-    "score_yellow": "0.00",
-    "count_yellow": 0,
-    "score_red": "0.00",
-    "count_red": 1,
-    "population": 90,
-    "total_report": 1,
     "total_score": "1.00"
   }
 }
