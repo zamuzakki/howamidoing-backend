@@ -22,11 +22,16 @@ def generate_grid_score():
     Generate KmGridScore from KmGrid and Report
     """
 
+    # Query all grid score
+    grid_score = KmGridScore.objects.all().values('geometry')
+
     # Query all grids
-    grids = KmGrid.objects.all()
+    grids = KmGrid.objects.exclude(geometry__in=grid_score)
+
+    print(f'--- Inserting {grids.count()} Grid Scores ---')
 
     # Loop each grid
-    for grid in grids:
+    for num, grid in enumerate(grids):
         # Query reports contained within each grid
         grid_report = Report.current_objects.filter(grid=grid)
         green_report = grid_report.green_report()
@@ -46,3 +51,8 @@ def generate_grid_score():
         grid_score.set_color_score('yellow')
         grid_score.set_color_score('red')
         grid_score.set_total_score()
+
+        if num % 50 == 0 and num > 0:
+            print(f'{num} Grid Scores Inserted ')
+
+    print(f'-- {grids.count()} Grid Scores Inserted --')

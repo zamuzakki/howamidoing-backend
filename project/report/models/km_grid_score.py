@@ -3,7 +3,6 @@ from django.contrib.gis.db import models as gis
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from ..utils.scoring_grid import color_score_km_grid, status_score_km_grid
-from rest_framework_mvt.managers import MVTManager
 import logging
 
 logger = logging.getLogger(__name__)
@@ -150,7 +149,6 @@ class KmGridScore(models.Model):
     )
 
     objects = KmGridScoreManager()
-    vector_tiles = MVTManager(geo_col='geometry')
 
     def __str__(self):
         return '{} | {} | {} | {}'.format(self.id, self.geometry, self.population, self.total_score)
@@ -158,6 +156,33 @@ class KmGridScore(models.Model):
     def set_color_score(self, color="green"):
         score = color_score_km_grid(getattr(self, f'count_{color}'), self.population, color)
         setattr(self, f'score_{color}', score)
+        self.save()
+
+    def set_color_score_by_status(self, status):
+        if "well" in status.name:
+            self.set_color_score('green')
+        elif "supplies" in status.name:
+            self.set_color_score('yellow')
+        elif "medical" in status.name:
+            self.set_color_score('red')
+
+    def set_color_count_by_status(self, status, operation='add'):
+
+        if "well" in status.name:
+            if operation == 'add':
+                self.count_green += 1
+            if operation == 'sub':
+                self.count_green -= 1
+        elif "supplies" in status.name:
+            if operation == 'add':
+                self.count_yellow += 1
+            if operation == 'sub':
+                self.count_yellow -= 1
+        elif "medical" in status.name:
+            if operation == 'add':
+                self.count_red += 1
+            if operation == 'sub':
+                self.count_red -= 1
         self.save()
 
     def set_total_score(self):

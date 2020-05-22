@@ -2,13 +2,13 @@ from django_filters import rest_framework as filters
 from rest_framework import viewsets, mixins, status
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.response import Response
-from rest_framework_gis.filters import TMSTileFilter, InBBoxFilter
+from rest_framework_gis.filters import InBBoxFilter
 from .models.status import Status
 from .models.report import Report
 from .models.km_grid import KmGrid
 from .models.km_grid_score import KmGridScore
 from .models.user import User
-from .filters import KmGridFilter, KmGridScoreFilter, ReportFilter
+from .filters import KmGridFilter, KmGridScoreFilter, ReportFilter, StatusFilter
 from .serializers import StatusSerializer, ReportSerializer, ReportCreateSerializer,\
     ReportRetrieveListSerializer, UserSerializer, KmGridSerializer,\
     KmGridScoreSerializer
@@ -34,6 +34,7 @@ class StatusViewSet(mixins.RetrieveModelMixin,
     serializer_class = StatusSerializer
     queryset = Status.objects.all()
     filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = StatusFilter
 
 
 class ReportViewSet(mixins.RetrieveModelMixin,
@@ -74,8 +75,6 @@ class ReportViewSet(mixins.RetrieveModelMixin,
             )
             if grid.count() > 0:
                 request.data['grid'] = grid.first().id
-
-            print(request.data)
 
             serializer = ReportSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -152,13 +151,26 @@ class KmGridScoreViewSet(mixins.RetrieveModelMixin,
     """
 
     serializer_class = KmGridScoreSerializer
+    bbox_filter_field = 'geometry'
     queryset = KmGridScore.objects.all()
-    filter_backends = (filters.DjangoFilterBackend, InBBoxFilter, TMSTileFilter)
+    filter_backends = (filters.DjangoFilterBackend, InBBoxFilter)
     filterset_class = KmGridScoreFilter
 
+    def list(self, request, *args, **kwargs):
+        if 'no_page' in request.query_params:
+            self.pagination_class = None
+        queryset = self.filter_queryset(self.get_queryset())
 
-class UserViewSet(mixins.RetrieveModelMixin,
-                  mixins.ListModelMixin,
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class UserViewSet(mixins.ListModelMixin,
                   mixins.CreateModelMixin,
                   viewsets.GenericViewSet):
     """

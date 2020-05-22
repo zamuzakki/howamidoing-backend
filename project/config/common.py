@@ -25,6 +25,7 @@ class Common(Configuration):
         'drf_yasg',                  # swagger UI for rest framework
         'leaflet',                   # Djanfo Leaflet to show map
         'django_crontab',            # package for cron job
+        'corsheaders',               # for CORS settings
 
         # Your apps
         'project.users',
@@ -33,6 +34,7 @@ class Common(Configuration):
 
     # https://docs.djangoproject.com/en/2.0/topics/http/middleware/
     MIDDLEWARE = (
+        'corsheaders.middleware.CorsMiddleware',
         'django.middleware.security.SecurityMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.middleware.common.CommonMiddleware',
