@@ -3,6 +3,8 @@ from django.contrib.gis.db import models as gis
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from ..utils.scoring_grid import color_score_km_grid, status_score_km_grid
+from rest_framework_mvt.managers import MVTManager
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -149,6 +151,7 @@ class KmGridScore(models.Model):
     )
 
     objects = KmGridScoreManager()
+    vector_tiles = MVTManager(geo_col='geometry')
 
     def __str__(self):
         return '{} | {} | {} | {}'.format(self.id, self.geometry, self.population, self.total_score)
