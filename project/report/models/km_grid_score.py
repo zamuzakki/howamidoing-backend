@@ -151,7 +151,6 @@ class KmGridScore(models.Model):
     )
 
     objects = KmGridScoreManager()
-    vector_tiles = MVTManager(geo_col='geometry')
 
     def __str__(self):
         return '{} | {} | {} | {}'.format(self.id, self.geometry, self.population, self.total_score)

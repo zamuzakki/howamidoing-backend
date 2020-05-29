@@ -11,7 +11,9 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from project.report.views import StatusViewSet, ReportViewSet, KmGridViewSet,\
     KmGridScoreViewSet, UserViewSet
+
 from project.report.models.km_grid_score import KmGridScore
+
 
 router = DefaultRouter()
 router.register(r'status', StatusViewSet)
@@ -46,7 +48,6 @@ urlpatterns = [
     path("api/v1/grid-score-tiles/", mvt_view_factory(KmGridScore)),
     path('api-token-auth/', views.obtain_auth_token),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-
 
     # the 'api-root' from django rest-frameworks default router
     # http://www.django-rest-framework.org/api-guide/routers/#defaultrouter
