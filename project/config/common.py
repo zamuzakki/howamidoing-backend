@@ -2,7 +2,7 @@ import os
 from os.path import join
 import dj_database_url
 from configurations import Configuration
-from decouple import config
+from decouple import config, Csv
 
 
 class Common(Configuration):
@@ -44,7 +44,7 @@ class Common(Configuration):
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
     )
 
-    ALLOWED_HOSTS = ["*"]
+    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=['localhost', '0.0.0.0', '127.0.0.01'], cast=Csv())
     ROOT_URLCONF = 'project.urls'
     SECRET_KEY = config('DJANGO_SECRET_KEY')
     WSGI_APPLICATION = 'project.wsgi.application'
