@@ -3,6 +3,8 @@ from django.contrib.gis.db import models as gis
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from ..utils.scoring_grid import color_score_km_grid, status_score_km_grid
+from rest_framework_mvt.managers import MVTManager
+
 import logging
 
 logger = logging.getLogger(__name__)
