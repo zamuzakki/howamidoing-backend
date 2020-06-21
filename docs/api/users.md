@@ -1,21 +1,11 @@
 # Users
-Supports registering, viewing, and updating user accounts.
+Supports registering, viewing, and updating anonymous user for report creation.
 
-## Register a new user account
+## Register a new user
 
 **Request**:
 
 `POST` `/users/`
-
-Parameters:
-
-Name       | Type   | Required | Description
------------|--------|----------|------------
-username   | string | Yes      | The username for the new user.
-password   | string | Yes      | The password for the new user account.
-first_name | string | No       | The user's given name.
-last_name  | string | No       | The user's family name.
-email      | string | No       | The user's email address.
 
 *Note:*
 
@@ -28,30 +18,21 @@ Content-Type application/json
 201 Created
 
 {
-  "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011",
-  "username": "zamuzakki",
-  "first_name": "Zulfikar Akbar",
-  "last_name": "Muzakki",
-  "email": "zamuzakki@zamuzakki.codes",
-  "auth_token": "132cf952e0165a274bf99e115ab483671b3d9ff6"
+  "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011"
 }
 ```
 
-The `auth_token` returned with this response should be stored by the client for
-authenticating future requests to the API. See [Authentication](authentication.md).
+The `id` returned with this response should be stored by the client for creating report.
 
 
-## Get a user's profile information
+## Get a user
 
 **Request**:
 
 `GET` `/users/:id`
 
-Parameters:
-
-*Note:*
-
-- **[Authorization Protected](authentication.md)**
+URL Parameters:
+- id: ID of the user
 
 **Response**:
 
@@ -60,47 +41,6 @@ Content-Type application/json
 200 OK
 
 {
-  "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011",
-  "username": "zamuzakki",
-  "first_name": "Zulfikar Akbar",
-  "last_name": "Muzakki",
-  "email": "zamuzakki@zamuzakki.codes",
-}
-```
-
-
-## Update your profile information
-
-**Request**:
-
-`PUT/PATCH` `/users/:id`
-
-Parameters:
-
-Name       | Type   | Description
------------|--------|---
-first_name | string | The first_name of the user object.
-last_name  | string | The last_name of the user object.
-email      | string | The user's email address.
-
-
-
-*Note:*
-
-- All parameters are optional
-- **[Authorization Protected](authentication.md)**
-
-**Response**:
-
-```json
-Content-Type application/json
-200 OK
-
-{
-  "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011",
-  "username": "richard",
-  "first_name": "Zulfikar",
-  "last_name": "Muzakki",
-  "email": "zakki@kartoza.com",
+  "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011"
 }
 ```

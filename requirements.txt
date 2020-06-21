@@ -24,6 +24,7 @@ Markdown==3.1.1
 django-filter==2.2.0
 djangorestframework==3.11.0
 djangorestframework-gis==0.15
+djangorestframework-mvt==0.2.4
 drf-yasg==1.17.1
 
 # Developer Tools
