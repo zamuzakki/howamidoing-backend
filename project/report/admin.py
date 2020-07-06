@@ -5,6 +5,8 @@ from leaflet.admin import LeafletGeoAdmin
 from .forms import FileImportForm
 from .models.status import Status
 from .models.report import Report
+from .models.report_point import ReportPoint
+from .models.report_point_score import ReportPointScore
 from .models.km_grid import KmGrid
 from .models.km_grid_score import KmGridScore
 from .management.commands.import_grid import check_json_loadable, check_geojson_loadable, loop_geojson
@@ -12,6 +14,8 @@ from .management.commands.import_grid import check_json_loadable, check_geojson_
 admin.site.site_header = 'How Am I Doing? Administration'
 
 admin.site.register(Status)
+admin.site.register(ReportPoint)
+admin.site.register(ReportPointScore)
 admin.site.register(Report, LeafletGeoAdmin)
 
 @admin.register(KmGridScore)
