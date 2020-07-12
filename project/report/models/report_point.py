@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 from .user import User
 from .report_point_score import ReportPointScore
+from .km_grid import KmGrid
 from .status import Status
 import logging
 
@@ -102,6 +103,15 @@ class ReportPoint(models.Model):
     location = gis.PointField(
         help_text=_('Location of the user when making the Report.'),
         srid=3857
+    )
+
+    grid = models.ForeignKey(
+        KmGrid,
+        help_text=_('Grid reference of the report'),
+        null=True,
+        default=None,
+        blank=True,
+        on_delete=models.CASCADE
     )
 
     objects = models.Manager()

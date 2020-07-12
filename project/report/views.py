@@ -71,8 +71,9 @@ class ReportViewSet(mixins.RetrieveModelMixin,
     def create(self, request, *args, **kwargs):
         try:
             grid = KmGrid.objects.geometry_contains(
-                json.dumps(request.data['location'])
+                request.data['location']
             )
+            print(grid)
             if grid.count() > 0:
                 request.data['grid'] = grid.first().id
 

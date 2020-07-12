@@ -21,10 +21,16 @@ admin.site.register(Report, LeafletGeoAdmin)
 @admin.register(KmGridScore)
 class KmGridScoreAdmin(LeafletGeoAdmin):
     list_filter = ('total_score',)
+    settings_overrides = {
+        'SRID': 3857,
+    }
 
 @admin.register(KmGrid)
 class KmGridAdmin(LeafletGeoAdmin):
     change_list_template = "admin/kmgrid_change_list.html"
+    settings_overrides = {
+        'SRID': 3857,
+    }
 
     def get_urls(self):
         urls = super().get_urls()

@@ -1,4 +1,5 @@
 from django.contrib.gis.geos import fromstr
+from django.contrib.gis.db import models as gis
 from django.db import models
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
@@ -16,7 +17,7 @@ class ReportQuerySet(models.QuerySet):
     """Custom QuerySet for Report."""
 
     def location_within(self, geojson_geometry_string):
-        geometry = fromstr(geojson_geometry_string, srid=4326)
+        geometry = fromstr(geojson_geometry_string, srid=3857)
         return self.filter(
             location__within=geometry
         )
@@ -43,7 +44,7 @@ class ReportManager(models.Manager):
         return ReportQuerySet(self.model, using=self._db)
 
     def location_within(self, geojson_geometry_string):
-        geometry = fromstr(geojson_geometry_string, srid=4326)
+        geometry = fromstr(geojson_geometry_string, srid=3857)
         return self.get_queryset().filter(
             location__within=geometry
         )

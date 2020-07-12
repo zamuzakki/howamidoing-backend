@@ -1,4 +1,4 @@
-from django.contrib.gis.geos import fromstr
+from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.db import models as gis
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -10,13 +10,21 @@ class KmGridQuerySet(models.QuerySet):
     """Custom version manager for Grid."""
 
     def geometry_contains(self, geojson_geometry_string):
-        geometry = fromstr(geojson_geometry_string, srid=4326)
+        print(geojson_geometry_string)
+        geometry = GEOSGeometry(
+            "POINT({} {})".format(
+                geojson_geometry_string['coordinates'][0],
+                geojson_geometry_string['coordinates'][1]
+            ),
+            srid=3857
+        )
+        print(geometry)
         return self.filter(
             geometry__contains=geometry
         )
 
     def geometry_equals(self, geojson_geometry_string):
-        geometry = fromstr(geojson_geometry_string, srid=4326)
+        geometry = GEOSGeometry(geojson_geometry_string, srid=3857)
         return self.filter(
             geometry__equals=geometry
         )
@@ -31,7 +39,8 @@ class KmGrid(models.Model):
         help_text=_('Geometry of this grid'),
         null=True,
         blank=True,
-        default=None
+        default=None,
+        srid=3857
     )
 
     population = models.IntegerField(

@@ -13,13 +13,13 @@ class KmGridScoreQuerySet(models.QuerySet):
     """Custom version manager for Grid."""
 
     def geometry_contains(self, geojson_geometry_string):
-        geometry = fromstr(geojson_geometry_string, srid=4326)
+        geometry = fromstr(geojson_geometry_string, srid=3857)
         return self.filter(
             geometry__contains=geometry
         )
 
     def geometry_equals(self, geojson_geometry_string):
-        geometry = fromstr(geojson_geometry_string, srid=4326)
+        geometry = fromstr(geojson_geometry_string, srid=3857)
         return self.filter(
             geometry__equals=geometry
         )
@@ -44,13 +44,13 @@ class KmGridScoreManager(models.Manager):
         return KmGridScoreQuerySet(self.model, using=self._db)
 
     def geometry_contains(self, geojson_geometry_string):
-        geometry = fromstr(geojson_geometry_string, srid=4326)
+        geometry = fromstr(geojson_geometry_string, srid=3857)
         return self.get_queryset().filter(
             geometry__contains=geometry
         )
 
     def geometry_equals(self, geojson_geometry_string):
-        geometry = fromstr(geojson_geometry_string, srid=4326)
+        geometry = fromstr(geojson_geometry_string, srid=3857)
         return self.get_queryset().filter(
             geometry__equals=geometry
         )
@@ -76,7 +76,8 @@ class KmGridScore(models.Model):
         help_text=_('Geometry of this Grid'),
         null=True,
         blank=True,
-        default=None
+        default=None,
+        srid=3857
     )
 
     score_green = models.DecimalField(
