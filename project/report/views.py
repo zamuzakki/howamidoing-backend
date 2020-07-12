@@ -1,13 +1,19 @@
 from django_filters import rest_framework as filters
+from django.contrib.gis.gdal import gdal_version
+from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.db.models.functions import Centroid
 from rest_framework import viewsets, mixins, status
+from rest_framework.serializers import ValidationError
+from rest_framework_mvt.views import BaseMVTView
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.response import Response
-from rest_framework_gis.filters import InBBoxFilter
+from rest_framework_gis.filters import InBBoxFilter, TMSTileFilter
 from .models.status import Status
 from .models.report import Report
 from .models.km_grid import KmGrid
 from .models.km_grid_score import KmGridScore
 from .models.user import User
+from .utils.common_function import flip_geojson_coordinates
 from .filters import KmGridFilter, KmGridScoreFilter, ReportFilter, StatusFilter
 from .serializers import StatusSerializer, ReportSerializer, ReportCreateSerializer,\
     ReportRetrieveListSerializer, UserSerializer, KmGridSerializer,\
@@ -71,7 +77,7 @@ class ReportViewSet(mixins.RetrieveModelMixin,
     def create(self, request, *args, **kwargs):
         try:
             grid = KmGrid.objects.geometry_contains(
-                json.dumps(request.data['location'])
+                request.data['location']
             )
             if grid.count() > 0:
                 request.data['grid'] = grid.first().id
@@ -79,7 +85,6 @@ class ReportViewSet(mixins.RetrieveModelMixin,
             serializer = ReportSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
         except Exception as e:
-            print(e)
             return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         mixins.CreateModelMixin.perform_create(self, serializer)
@@ -160,11 +165,12 @@ class KmGridScoreViewSet(mixins.RetrieveModelMixin,
         if 'no_page' in request.query_params:
             self.pagination_class = None
         queryset = self.filter_queryset(self.get_queryset())
+        queryset = queryset.annotate(centroid=Centroid('geometry'))
 
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            return self.get_paginated_response(serializer.data)\
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
@@ -199,3 +205,54 @@ class UserViewSet(mixins.ListModelMixin,
         if self.action == 'list':
             permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
+
+
+class KmGridScoreMVTView(BaseMVTView):
+    # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):
+        params = request.GET.dict()
+        if params.pop("tile", None) is not None:
+            try:
+                limit, offset = self._validate_paginate(
+                    params.pop("limit", None), params.pop("offset", None)
+                )
+            except ValidationError:
+                limit, offset = None, None
+
+            bbox = TMSTileFilter().get_filter_bbox(request)
+            # print(bbox.extent)
+            if gdal_version().decode("utf-8").split('.')[0] == '3':
+                bbox_geojson = json.loads(bbox.geojson)
+                flip_geojson_coordinates(bbox_geojson)
+                bbox_geojson = json.dumps(bbox_geojson)
+
+            try:
+                bbox = GEOSGeometry(bbox_geojson, srid=4326)
+                bbox.transform(3857)
+                # print(bbox.extent)
+            except Exception as e:
+                print('Error Transforming or creating Geometry')
+
+            try:
+                mvt = self.model.vector_tiles.intersect(
+                    bbox=bbox, limit=limit, offset=offset, filters=params
+                )
+                status = 200 if mvt else 204
+            except Exception:
+                mvt = b""
+                status = 400
+        else:
+            mvt = b""
+            status = 400
+
+        return Response(
+            bytes(mvt), content_type="application/vnd.mapbox-vector-tile", status=status
+        )
+
+
+def mvt_view_factory(model_class, geom_col="geom"):
+    return type(
+        f"{model_class.__name__}MVTView",
+        (KmGridScoreMVTView,),
+        {"model": model_class, "geom_col": geom_col},
+    ).as_view()

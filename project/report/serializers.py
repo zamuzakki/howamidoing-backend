@@ -80,10 +80,22 @@ class KmGridScoreSerializer(GeoFeatureModelSerializer):
     Serializer for KmGridScore object.
     """
 
+    def to_representation(self, instance):
+        feature = dict()
+        feature["type"] = "Feature"
+        field = self.fields[self.Meta.geo_field]
+        feature["geometry"] = field.to_representation(instance.centroid)
+        feature["properties"] = {
+            "total_score": instance.total_score,
+            "total_report": instance.total_report
+        }
+
+        return feature
+
     class Meta:
         model = KmGridScore
         geo_field = 'geometry'
-        fields = ('total_score',)
+        fields = ('total_score', 'total_report')
 
 
 class ReportPointSerializer(serializers.ModelSerializer):
