@@ -1,7 +1,7 @@
 __author__ = 'zakki@kartoza.com'
 
 from django.core.management.base import BaseCommand
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import GEOSGeometry, Polygon
 from project.report.models.km_grid import KmGrid
 import os
 import json
@@ -157,18 +157,28 @@ def loop_geojson(geojson_data):
     """
     created_object = 0
     for grid in geojson_data['features']:
-        grid = create_single_grid_from_features(grid)
+        grid = create_single_grid_from_features(grid, geojson_data['crs'])
         if grid is not None:
             created_object += 1
 
     return(created_object, len(geojson_data['features']))
 
-def create_single_grid_from_features(grid):
+def create_single_grid_from_features(grid, crs):
     """
     Create single grid based on single GeoJSON object
     """
+    # grid['geometry']['crs'] = crs
+    # print(grid['geometry']['coordinates'][0][0][0])
+    geom = Polygon((
+        (grid['geometry']['coordinates'][0][0][0], grid['geometry']['coordinates'][0][0][1]),
+        (grid['geometry']['coordinates'][0][1][0], grid['geometry']['coordinates'][0][0][1]),
+        (grid['geometry']['coordinates'][0][2][0], grid['geometry']['coordinates'][0][0][1]),
+        (grid['geometry']['coordinates'][0][3][0], grid['geometry']['coordinates'][0][0][1]),
+        (grid['geometry']['coordinates'][0][4][0], grid['geometry']['coordinates'][0][0][1]),
+    ), srid=3857)
+    print(geom)
     try:
-        geometry = GEOSGeometry(str(grid['geometry']))
+        geometry = geom
     except KeyError as e:
         print(e)
         return None

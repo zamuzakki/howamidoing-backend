@@ -76,7 +76,7 @@ class DjangoGeoPointProvider(BaseProvider):
         kwargs.pop('coords_only', None)
         faker = factory.Faker('local_latlng', coords_only=True, **kwargs)
         coords = faker.generate()
-        return Point(x=float(coords[1]), y=float(coords[0]), srid=4326)
+        return Point(x=float(coords[1]), y=float(coords[0]), srid=3857)
 
 
 class ReportFactory(factory.django.DjangoModelFactory):
