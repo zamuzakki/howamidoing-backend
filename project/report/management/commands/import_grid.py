@@ -156,10 +156,16 @@ def loop_geojson(geojson_data):
     Loop GeoJSON and call function to create grid
     """
     created_object = 0
-    for grid in geojson_data['features']:
+    to_import = len(geojson_data['features'])
+    for idx, grid in enumerate(geojson_data['features']):
         grid = create_single_grid_from_features(grid, geojson_data['crs'])
         if grid is not None:
             created_object += 1
+        if created_object % 100 == 0 and created_object > 0:
+            print('{}/{} Grid Scores Inserted'.format(
+                created_object,
+                to_import
+            ))
 
     return(created_object, len(geojson_data['features']))
 
