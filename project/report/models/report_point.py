@@ -105,14 +105,14 @@ class ReportPoint(models.Model):
         srid=3857
     )
 
-    grid = models.ForeignKey(
-        KmGrid,
-        help_text=_('Grid reference of the report'),
-        null=True,
-        default=None,
-        blank=True,
-        on_delete=models.CASCADE
-    )
+    # grid = models.ForeignKey(
+    #     KmGrid,
+    #     help_text=_('Grid reference of the report'),
+    #     null=True,
+    #     default=None,
+    #     blank=True,
+    #     on_delete=models.CASCADE
+    # )
 
     objects = models.Manager()
     current_objects = ReportPointManager()
