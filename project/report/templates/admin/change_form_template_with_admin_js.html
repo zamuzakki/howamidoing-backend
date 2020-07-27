@@ -1,0 +1,101 @@
+{% extends 'admin/change_form.html' %}
+{% load static %}
+{% block admin_change_form_document_ready %}
+    <script
+            src="https://code.jquery.com/jquery-1.11.3.min.js"
+            integrity="sha256-7LkWEzqTdpEfELxcZZlS6wAx5Ff13zZ83lYO2/ujj7g="
+            crossorigin="anonymous"></script>
+    {{ block.super }}
+    <script type="text/javascript">
+        var onChangedByInput = false;
+        $(document).ready(function () {
+            var $wrapper = $('.field-list_clients, .field-list_farms, .field-list_farmers');
+            $wrapper.css('position', 'relative');
+            $wrapper.find('.check-more').click(function () {
+                $(this).closest('td').find('.big-content').css('height', 'auto');
+                $(this).hide();
+            });
+
+
+            if ($('#id_location_admin_map').length > 0) {
+                $('#id_location_admin_map').prepend('<div style="margin-bottom: 10px"> ' +
+                    ' Longitude: <input type="text" id="id_location_admin_map_longitude" style="width: 150px;">' +
+                    ' Latitude: <input type="text" id="id_location_admin_map_latitude" style="width: 150px;"> (EPSG:4326)' +
+                    ' <div style="color: red; font-style: italic; display: none" id="id_location_admin_map_error">Longitude or latitude is not in float format.</div>' +
+                    '</div>');
+                var $longitude = $('#id_location_admin_map_longitude');
+                var $latitude = $('#id_location_admin_map_latitude');
+
+                function checkLocation() {
+                    onChangedByInput = true;
+                    var $errorIndicator = $('#id_location_admin_map_error');
+                    $errorIndicator.hide();
+                    if (isNaN($longitude.val()) || isNaN($latitude.val())) {
+                        $errorIndicator.show();
+                    } else {
+                        if ($longitude.val() && $latitude.val()) {
+                            var latLon = new OpenLayers.LonLat($longitude.val(), $latitude.val());
+                            var newLonLat = latLon.transform(
+                                new OpenLayers.Projection("EPSG:4326"), geodjango_location.map.getProjectionObject());
+                            var wkt = "SRID=3857;POINT(" + newLonLat['lon'] + " " + newLonLat['lat'] + ")";
+                            var admin_geom = geodjango_location.read_wkt(wkt);
+                            geodjango_location.layers.vector.addFeatures([admin_geom]);
+                            geodjango_location.map.setCenter(latLon);
+                        }
+                    }
+                }
+
+                function locationChanged(event) {
+                    var newLonLat = new OpenLayers.LonLat(event.feature.geometry.x, event.feature.geometry.y).transform(
+                        geodjango_location.map.getProjectionObject(), new OpenLayers.Projection("EPSG:4326"));
+                    if (!onChangedByInput) {
+                        $longitude.val(newLonLat['lon']);
+                        $latitude.val(newLonLat['lat']);
+                    }
+                    onChangedByInput = false;
+                }
+
+                geodjango_location.layers.vector.events.on({"featuremodified": locationChanged});
+                geodjango_location.layers.vector.events.on({"featureadded": locationChanged});
+
+                $longitude.keyup(function () {
+                    checkLocation();
+                });
+                $latitude.keyup(function () {
+                    checkLocation();
+                });
+            }
+
+            $('.field-farms .selector').width(712);
+            $('.field-farms .help').append('' +
+                '<div style="margin-top: 20px; font-style: italic; color: grey">filter by client</div>' +
+                '<div id="client-list" style="margin-top: 5px; font-style: italic; color: grey">Loading</div>');
+            var clients = {};
+            $.ajax({
+                url: "/en/agri/api/clientfarm",
+                dataType: 'json',
+                success: function (data) {
+                    $('#client-list').html('<select id="client-selector"></select>');
+                    $.each(data, function (index, client) {
+                        clients[client['id']] = client;
+                        $('#client-selector').append('<option value="' + client['id'] + '">' + client['name'] + '</option>');
+                    });
+                    $('#client-selector').change(function () {
+                        var client = clients[$(this).val()];
+                        var id = 'id_farms_from';
+                        var node;
+                        for (var i = 0; (node = SelectBox.cache[id][i]); i++) {
+                            node.displayed = 0;
+                            $.each(client['farms'], function (index, farm) {
+                                if (node.value === (farm + '')) {
+                                    node.displayed = 1;
+                                }
+                            });
+                        }
+                        SelectBox.redisplay(id);
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock %}

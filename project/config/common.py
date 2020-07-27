@@ -26,8 +26,9 @@ class Common(Configuration):
         'leaflet',                   # Djanfo Leaflet to show map
         'django_crontab',            # package for cron job
         'corsheaders',               # for CORS settings
+        'sslserver',
 
-        # Your apps
+        # Howamidoing apps
         'project.users',
         'project.report'
     )
