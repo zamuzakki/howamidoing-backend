@@ -21,7 +21,7 @@ schema_view = get_schema_view(
     public=False,
     permission_classes=(permissions.IsAuthenticatedOrReadOnly,),
 )
-router = DefaultRouter(trailing_slash=False)
+router = DefaultRouter(trailing_slash=True)
 router.register(r'status', StatusViewSet)
 router.register(r'report', ReportViewSet)
 router.register(r'grid', KmGridViewSet)
