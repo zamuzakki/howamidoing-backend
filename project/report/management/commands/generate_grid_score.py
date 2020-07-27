@@ -21,16 +21,24 @@ class Command(BaseCommand):
             dest='select',
             help='Mode of KmGridScore generation',
         )
+        parser.add_argument(
+            '--grids',
+            dest='grids',
+            help='ID of KmGridScore, separated by comma',
+        )
 
     def handle(self, **options):
         try:
             if options['select']:
                 generate_grid_score(select=options['select'])
 
+            if options['grids']:
+                generate_grid_score(grids=options['grids'])
+
         except KeyError:
             generate_grid_score()
 
-def generate_grid_score(select='all'):
+def generate_grid_score(select='all', grids=None):
     """
     Generate KmGridScore from KmGrid and Report
     """
@@ -40,18 +48,22 @@ def generate_grid_score(select='all'):
     if select == 'non-existing':
         # Query all grid score
         grid_score = KmGridScore.objects.all().values('geometry')
-        grids = KmGrid.objects.exclude(geometry__in=grid_score)
+        grid_qs = KmGrid.objects.exclude(geometry__in=grid_score)
     elif select == 'all':
-        grids = KmGrid.objects.all()
+        grid_qs = KmGrid.objects.all()
     else:
         raise ValueError('select value must be "all" or "non-existing"')
 
-    print(f'--- Inserting {grids.count()} Grid Scores ---')
+    if grids is not None:
+        grids = grids.split(',')
+        grid_qs = KmGrid.objects.filter(id__in=grids)
+
+    print(f'--- Inserting {grid_qs.count()} Grid Scores ---')
 
     # Loop each grid
-    for num, grid in enumerate(grids):
+    for num, grid in enumerate(grid_qs):
         # Query reports contained within each grid
-        grid_report = Report.current_objects.filter(grid=grid)
+        grid_report = Report.current_objects.filter(grid=grid, current=True)
         green_report = grid_report.green_report()
         yellow_report = grid_report.yellow_report()
         red_report = grid_report.red_report()
@@ -73,4 +85,4 @@ def generate_grid_score(select='all'):
         if num % 50 == 0 and num > 0:
             print(f'{num} Grid Scores Inserted ')
 
-    print(f'-- {grids.count()} Grid Scores Inserted --')
+    print(f'-- {grid_qs.count()} Grid Scores Inserted --')
