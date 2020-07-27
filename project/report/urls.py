@@ -34,8 +34,8 @@ urlpatterns = [
         schema_view.without_ui(cache_timeout=0),
         name='schema-json'
     ),
-    path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui-v1'),
+    path('v2/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui-v1'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc-v1'),
-    path('', include(router.urls)),
+    path('v2/', include(router.urls)),
     path("grid-score-tiles/", mvt_view_factory(KmGridScore)),
 ]
