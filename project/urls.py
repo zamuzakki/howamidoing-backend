@@ -7,10 +7,10 @@ from rest_framework.authtoken import views
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include('project.report.urls')),
-    path('api-token-auth/', views.obtain_auth_token),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('v2/admin/', admin.site.urls),
+    path('v2/api/', include('project.report.urls')),
+    path('v2/api-token-auth/', views.obtain_auth_token),
+    path('v2/api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
     # the 'api-root' from django rest-frameworks default router
     # http://www.django-rest-framework.org/api-guide/routers/#defaultrouter
