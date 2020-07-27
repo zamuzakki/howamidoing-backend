@@ -41,7 +41,7 @@ def generate_grid_score(select='all'):
         # Query all grid score
         grid_score = KmGridScore.objects.all().values('geometry')
         grids = KmGrid.objects.exclude(geometry__in=grid_score)
-    if select == 'all':
+    elif select == 'all':
         grids = KmGrid.objects.all()
     else:
         raise ValueError('select value must be "all" or "non-existing"')
