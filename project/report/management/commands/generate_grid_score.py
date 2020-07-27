@@ -14,19 +14,37 @@ class Command(BaseCommand):
     """
     Base command to generate KmGridScore from KmGrid and Report
     """
-    def handle(self, **options):
-        generate_grid_score()
+    def add_arguments(self, parser):
+        """ Define arguments for the command """
+        parser.add_argument(
+            '--select',
+            dest='select',
+            help='Mode of KmGridScore generation',
+        )
 
-def generate_grid_score():
+    def handle(self, **options):
+        try:
+            if options['select']:
+                generate_grid_score(select=options['select'])
+
+        except KeyError:
+            generate_grid_score()
+
+def generate_grid_score(select='all'):
     """
     Generate KmGridScore from KmGrid and Report
     """
 
-    # Query all grid score
-    grid_score = KmGridScore.objects.all().values('geometry')
-
+    # We only generate KmGridScore for grid that's still not in KmGridScore
     # Query all grids
-    grids = KmGrid.objects.exclude(geometry__in=grid_score)
+    if select == 'non-existing':
+        # Query all grid score
+        grid_score = KmGridScore.objects.all().values('geometry')
+        grids = KmGrid.objects.exclude(geometry__in=grid_score)
+    if select == 'all':
+        grids = KmGrid.objects.all()
+    else:
+        raise ValueError('select value must be "all" or "non-existing"')
 
     print(f'--- Inserting {grids.count()} Grid Scores ---')
 
@@ -38,7 +56,7 @@ def generate_grid_score():
         yellow_report = grid_report.yellow_report()
         red_report = grid_report.red_report()
 
-        # Create KmGridScore object
+        # Create/Update KmGridScore object
         grid_score, _ = KmGridScore.objects.get_or_create(geometry=grid.geometry)
         grid_score.population = grid.population
         grid_score.count_green = green_report.count()
