@@ -139,4 +139,20 @@ def report_post_save_signal(sender, instance, created, **kwargs):
 
     # Only do when grid is not None
     if instance.grid is not None:
-        management.call_command('generate_grid_score', '--grids={}'.format(instance.grid.id))
+        # check previous report. If it has different grid, recalculate both grid.
+        # If grid is the same, only recalculate score for that grid.
+        try:
+            prev_report = Report.objects.filter(user=instance.user, current=False).latest('id')
+        except Report.DoesNotExist:
+            prev_report = None
+        if prev_report:
+            if prev_report.grid == instance.grid:
+                management.call_command(
+                    'generate_grid_score',
+                    '--grids={}'.format(instance.grid.id)
+                )
+            else:
+                management.call_command(
+                    'generate_grid_score',
+                    '--grids={},{}'.format(instance.grid.id, prev_report.grid.id)
+                )
