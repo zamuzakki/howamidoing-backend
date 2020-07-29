@@ -70,17 +70,13 @@ def import_grid_from_geojson(file_path):
 def check_path_exist_and_is_file(file_path):
     """
     Check if path exists and is file.
-
     ::params::
     file_path : path to be checked
-
     ::params type::
     file_path : string
-
     ::return ::
     True : if path exists and is file
     False : if path does not exists or is not a file
-
     ::return type :: boolean
     """
     return os.path.isfile(file_path)
@@ -88,16 +84,12 @@ def check_path_exist_and_is_file(file_path):
 def read_local_file(file_path):
     """
     Read local file.
-
     ::params::
     file_path : path of the to read
-
     ::params type::
     file_path : string
-
     ::return ::
     content of the file
-
     ::return type :: string
     """
     with open(file_path, 'r') as f:
@@ -107,17 +99,13 @@ def read_local_file(file_path):
 def check_json_loadable(string_json):
     """
     Check if a string can be parsed to JSON.
-
     ::params::
     string_json : JSON string to check
-
     ::params type::
     string_json : string
-
     ::return :: (JSON loadable, parsed JSON)
     (False, {}) if the string is not JSON loadable
     (True, parsed_json_data) if the string is JSON loadable
-
     ::return type :: (boolean, dict)
     """
     try:
@@ -131,17 +119,13 @@ def check_geojson_loadable(json_data):
     Check if a JSON is a GeoJSON.
     The data should contain keys:
         name, type, crs,features
-
     ::params::
     json_data : JSON/dict to check
-
     ::params type::
     string_json : dict
-
     ::return :: (GeoJSON loadable, json_data)
     (False, json_data) if the dict is not a GeoJSON
     (True, json_data) if the dict is a GeoJSON
-
     ::return type :: (boolean, dict)
     """
     if type(json_data) != dict:
@@ -156,10 +140,16 @@ def loop_geojson(geojson_data):
     Loop GeoJSON and call function to create grid
     """
     created_object = 0
-    for grid in geojson_data['features']:
+    to_import = len(geojson_data['features'])
+    for idx, grid in enumerate(geojson_data['features']):
         grid = create_single_grid_from_features(grid, geojson_data['crs'])
         if grid is not None:
             created_object += 1
+        if created_object % 100 == 0 and created_object > 0:
+            print('{}/{} Grid Scores Inserted'.format(
+                created_object,
+                to_import
+            ))
 
     return(created_object, len(geojson_data['features']))
 
@@ -167,21 +157,13 @@ def create_single_grid_from_features(grid, crs):
     """
     Create single grid based on single GeoJSON object
     """
-    # grid['geometry']['crs'] = crs
-    # print(grid['geometry']['coordinates'][0][0][0])
     geom = Polygon((
         (grid['geometry']['coordinates'][0][0][0], grid['geometry']['coordinates'][0][0][1]),
-        (grid['geometry']['coordinates'][0][1][0], grid['geometry']['coordinates'][0][0][1]),
-        (grid['geometry']['coordinates'][0][2][0], grid['geometry']['coordinates'][0][0][1]),
-        (grid['geometry']['coordinates'][0][3][0], grid['geometry']['coordinates'][0][0][1]),
-        (grid['geometry']['coordinates'][0][4][0], grid['geometry']['coordinates'][0][0][1]),
+        (grid['geometry']['coordinates'][0][1][0], grid['geometry']['coordinates'][0][1][1]),
+        (grid['geometry']['coordinates'][0][2][0], grid['geometry']['coordinates'][0][2][1]),
+        (grid['geometry']['coordinates'][0][3][0], grid['geometry']['coordinates'][0][3][1]),
+        (grid['geometry']['coordinates'][0][4][0], grid['geometry']['coordinates'][0][4][1]),
     ), srid=3857)
-    print(geom)
-    try:
-        geometry = geom
-    except KeyError as e:
-        print(e)
-        return None
 
     try:
         population = grid['properties']['population_count']
@@ -193,7 +175,7 @@ def create_single_grid_from_features(grid, crs):
 
     try:
         grid = KmGrid.objects.create(
-            geometry=geometry,
+            geometry=geom,
             population=population
         )
         grid.save()

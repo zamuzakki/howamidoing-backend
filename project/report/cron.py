@@ -31,4 +31,4 @@ def auto_generate_grid_score():
     """
     Automatically generate KmGridScore every night
     """
-    generate_grid_score()
+    generate_grid_score(select='all')
