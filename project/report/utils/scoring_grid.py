@@ -1,4 +1,4 @@
-def color_score_km_grid(user_report=0, population=0, color="green"):
+def color_score_km_grid(user_report=0, population=1, color="green"):
     """
     color scoring km_grid based on count of a color
 
@@ -17,6 +17,8 @@ def color_score_km_grid(user_report=0, population=0, color="green"):
 
     ::return type :: integer
     """
+    if population == 0:
+        population = 1
     weight = {'green': 1, 'yellow': 2, 'red': 5}
     score = (1 / population) * (weight.get(color, '1') * user_report)
     return score

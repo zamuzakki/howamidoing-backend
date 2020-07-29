@@ -26,8 +26,9 @@ class Common(Configuration):
         'leaflet',                   # Djanfo Leaflet to show map
         'django_crontab',            # package for cron job
         'corsheaders',               # for CORS settings
+        'sslserver',
 
-        # Your apps
+        # Howamidoing apps
         'project.users',
         'project.report'
     )
@@ -44,7 +45,7 @@ class Common(Configuration):
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
     )
 
-    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=['localhost', '0.0.0.0', '127.0.0.01'], cast=Csv())
+    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,0.0.0.0,127.0.0.01', cast=Csv())
     ROOT_URLCONF = 'project.urls'
     SECRET_KEY = config('DJANGO_SECRET_KEY')
     WSGI_APPLICATION = 'project.wsgi.application'

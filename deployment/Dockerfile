@@ -27,7 +27,7 @@ RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so
 
 ENV NOTVISIBLE "in users profile"
 RUN echo "export VISIBLE=now" >> /etc/profile
-CMD /usr/sbin/sshd
+#CMD /usr/sbin/sshd
 
 # Open port 8080 as we will be running our django dev server on
 EXPOSE 8080

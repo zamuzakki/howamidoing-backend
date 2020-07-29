@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.gis import admin as gis_admin
 from django.shortcuts import render, redirect
 from django.urls import path
 from leaflet.admin import LeafletGeoAdmin
@@ -14,12 +15,18 @@ admin.site.site_header = 'How Am I Doing? Administration'
 admin.site.register(Status)
 admin.site.register(Report, LeafletGeoAdmin)
 
+class SecureOSM(gis_admin.OSMGeoAdmin):
+    openlayers_url = 'https://openlayers.org/api/2.13/OpenLayers.js'
+    wms_url = 'https://vmap0.tiles.osgeo.org/wms/vmap0'
+    change_form_template = 'admin/change_form_template_with_admin_js.html'
+    display_srid = True
+
 @admin.register(KmGridScore)
-class KmGridScoreAdmin(LeafletGeoAdmin):
+class KmGridScoreAdmin(SecureOSM):
     list_filter = ('total_score',)
 
 @admin.register(KmGrid)
-class KmGridAdmin(LeafletGeoAdmin):
+class KmGridAdmin(SecureOSM):
     change_list_template = "admin/kmgrid_change_list.html"
 
     def get_urls(self):

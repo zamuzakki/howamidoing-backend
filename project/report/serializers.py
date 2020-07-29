@@ -27,7 +27,7 @@ class StatusSerializer(serializers.ModelSerializer):
 
 class ReportCreateSerializer(serializers.Serializer):
     """
-    Serializer for Status object in create action
+    Serializer for Report object in create action
     This serializer does not use nested status and user object, only id.
     location is the location of the report,that will be mapped/converted to grid ID
     """
@@ -41,7 +41,7 @@ class ReportCreateSerializer(serializers.Serializer):
 
 class ReportSerializer(serializers.ModelSerializer):
     """
-    Default Serializer for Status object.
+    Default Serializer for Report object.
     """
 
     class Meta:
@@ -51,7 +51,7 @@ class ReportSerializer(serializers.ModelSerializer):
 
 class ReportRetrieveListSerializer(serializers.ModelSerializer):
     """
-    Serializer for Status object in list and retrieve action.
+    Serializer for Report object in list and retrieve action.
     In this serializer, the user and status foreign-key object is also serialized as a nested object.
     This is because we need the object details in list and retrieve.
     """
@@ -78,7 +78,19 @@ class KmGridScoreSerializer(GeoFeatureModelSerializer):
     Serializer for KmGridScore object.
     """
 
+    def to_representation(self, instance):
+        feature = dict()
+        feature["type"] = "Feature"
+        field = self.fields[self.Meta.geo_field]
+        feature["geometry"] = field.to_representation(instance.centroid)
+        feature["properties"] = {
+            "total_score": instance.total_score,
+            "total_report": instance.total_report
+        }
+
+        return feature
+
     class Meta:
         model = KmGridScore
         geo_field = 'geometry'
-        fields = ('total_score',)
+        fields = ('total_score', 'total_report')
