@@ -156,3 +156,8 @@ def report_post_save_signal(sender, instance, created, **kwargs):
                     'generate_grid_score',
                     '--grids={},{}'.format(instance.grid.id, prev_report.grid.id)
                 )
+        else:
+            management.call_command(
+                'generate_grid_score',
+                '--grids={}'.format(instance.grid.id)
+            )
