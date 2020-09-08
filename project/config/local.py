@@ -1,10 +1,11 @@
 import os
 from .common import Common
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from decouple import config
 
 
 class Local(Common):
-    DEBUG = True
+    DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
 
     # Testing
     INSTALLED_APPS = Common.INSTALLED_APPS
