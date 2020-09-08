@@ -1,6 +1,4 @@
 from django.urls import reverse
-from django.conf import settings
-from django.contrib.gis.geos import GEOSGeometry, Polygon, Point
 from django.contrib.gis.db.models.functions import Centroid
 from django.core.paginator import Paginator
 from nose.tools import eq_
@@ -15,7 +13,7 @@ from project.report.test.factories import StatusFactory, ReportFactory, UserFact
 from project.users.test.factories import UserAdminFactory
 
 import factory
-import json
+
 
 fake = Faker()
 

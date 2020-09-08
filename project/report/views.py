@@ -81,7 +81,7 @@ class ReportViewSet(mixins.RetrieveModelMixin,
 
             serializer = ReportSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-        except Exception as e:
+        except Exception:
             return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         mixins.CreateModelMixin.perform_create(self, serializer)
@@ -155,7 +155,6 @@ class KmGridScoreMVTView(BaseMVTView):
                 limit, offset = None, None
 
             bbox = TMSTileFilter().get_filter_bbox(request)
-            # print(bbox.extent)
             if gdal_version().decode("utf-8").split('.')[0] == '3':
                 bbox_geojson = json.loads(bbox.geojson)
                 flip_geojson_coordinates(bbox_geojson)
@@ -164,8 +163,7 @@ class KmGridScoreMVTView(BaseMVTView):
             try:
                 bbox = GEOSGeometry(bbox_geojson, srid=4326)
                 bbox.transform(3857)
-                # print(bbox.extent)
-            except Exception as e:
+            except Exception:
                 print('Error Transforming or creating Geometry')
 
             try:

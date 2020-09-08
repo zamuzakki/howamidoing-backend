@@ -1,9 +1,7 @@
 from rest_framework import serializers
-from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeometryField
+from rest_framework_gis.serializers import GeometryField
 from .models.status import Status
 from .models.report import Report
-from .models.km_grid import KmGrid
-from .models.km_grid_score import KmGridScore
 from .models.user import User
 
 class UserSerializer(serializers.ModelSerializer):

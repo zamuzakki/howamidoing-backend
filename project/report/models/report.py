@@ -4,10 +4,9 @@ from django.db import models
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
-from .user import User
-from .km_grid import KmGrid
-from .km_grid_score import KmGridScore
-from .status import Status
+from project.report.models.user import User
+from project.report.models.km_grid import KmGrid
+from project.report.models.status import Status
 import logging
 
 logger = logging.getLogger(__name__)
@@ -108,14 +107,15 @@ class Report(models.Model):
         default=True
     )
 
-    objects = models.Manager()
-    current_objects = ReportManager()
+    objects = ReportManager()
 
     def __str__(self):
         if self.grid:
-            return '{} | {} | {} | {}'.format(self.id, self.grid.id, self.timestamp, self.user.id)
+            return '{} | {} | {} | {} | {}'.format(
+                self.id, self.current, self.status.id, self.grid.id, self.user.id
+            )
         else:
-            return '{} | {} | {}'.format(self.id, self.timestamp, self.user.id)
+            return '{} | {} | {} | {}'.format(self.id, self.current, self.status.id, self.user.id)
 
     class Meta:
         ordering = ('-id',)
@@ -126,7 +126,10 @@ def report_pre_save_signal(sender, instance, **kwargs):
     """
     Set False to previous status `current` field
     """
-    Report.objects.filter(user=instance.user).update(current=False)
+    try:
+        Report.objects.filter(user=instance.user).update(current=False)
+    except Report.DoesNotExist:
+        pass
 
 @receiver(post_save, sender=Report)
 def report_post_save_signal(sender, instance, created, **kwargs):

@@ -63,7 +63,7 @@ def generate_grid_score(select='all', grids=None):
     # Loop each grid
     for num, grid in enumerate(grid_qs):
         # Query reports contained within each grid
-        grid_report = Report.current_objects.filter(grid=grid, current=True)
+        grid_report = Report.objects.filter(grid=grid, current=True)
         green_report = grid_report.green_report()
         yellow_report = grid_report.yellow_report()
         red_report = grid_report.red_report()

@@ -1,10 +1,6 @@
-from rest_framework_gis.filterset import GeoFilterSet
-from rest_framework_gis.filters import GeometryFilter
 from django_filters import filters, FilterSet
 from project.report.models.status import Status
 from project.report.models.report import Report
-from project.report.models.km_grid import KmGrid
-from project.report.models.km_grid_score import KmGridScore
 
 
 class StatusFilter(FilterSet):

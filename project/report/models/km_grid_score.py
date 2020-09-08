@@ -1,8 +1,7 @@
 from django.contrib.gis.geos import fromstr
 from django.contrib.gis.db import models as gis
-from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from ..utils.scoring_grid import color_score_km_grid, status_score_km_grid
+from project.report.utils.scoring_grid import color_score_km_grid, status_score_km_grid
 from django.core.exceptions import FieldError
 from django.contrib.gis.db import models
 from rest_framework.serializers import ValidationError
