@@ -176,13 +176,12 @@ class KmGridScoreMVTManager(MVTManager):
             f"ST_Intersects({table}.{self.geo_col}, "
             f"ST_GeomFromText(%s)){extra_wheres}"
         )
-        # print(where_clause, list(params))
         return where_clause, list(params)
 
 
 class KmGridScore(models.Model):
     """
-    Materialized uiews for user status summary per grid
+    Model for user status summary per grid
     """
     geometry = gis.PolygonField(
         help_text=_('Geometry of this Grid'),
