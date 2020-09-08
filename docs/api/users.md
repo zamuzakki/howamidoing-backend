@@ -5,7 +5,7 @@ Supports registering, viewing, and updating anonymous user for report creation.
 
 **Request**:
 
-`POST` `/users/`
+`POST` `/v2/api/user/`
 
 *Note:*
 
@@ -18,7 +18,8 @@ Content-Type application/json
 201 Created
 
 {
-  "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011"
+  "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011",
+  "timestamp": "2020-07-30T23:52:19+0000"
 }
 ```
 
@@ -29,7 +30,7 @@ The `id` returned with this response should be stored by the client for creating
 
 **Request**:
 
-`GET` `/users/:id`
+`GET` `/v2/api/user/:id`
 
 URL Parameters:
 - id: ID of the user
@@ -41,6 +42,7 @@ Content-Type application/json
 200 OK
 
 {
-  "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011"
+  "id": "6d5f9bae-a31b-4b7b-82c4-3853eda2b011",
+  "timestamp": "2020-07-30T23:52:19+0000"
 }
 ```

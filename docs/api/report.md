@@ -5,7 +5,7 @@ Supports creating, viewing, and deleting report.
 
 **Request**:
 
-`POST` `/api/v1/report/`
+`POST` `/v2/api/report/`
 
 Payload Parameters:
 
@@ -40,7 +40,7 @@ Content-Type application/json
 
 **Request**:
 
-`DELETE` `/api/v1/report/:id/`
+`DELETE` `/v2/api/report/:id/`
 
 Parameters:
 - id: ID of the report

@@ -2,6 +2,13 @@
 App for anyone to register their status, initially during covid-19 lockdown / quarantine
 
 
+## API Demo
+You can see the demo of the API on [https://howamidoing.backend.kartoza.com/](https://howamidoing.backend.kartoza.com/).
+
+If you want to see how this API works after being intergrated with the Frontend, you can check 
+[https://howamidoing.kartoza.com/](https://howamidoing.kartoza.com/)
+
+
 ## Quick Installation on local
 
 1.  Clone the repo:
