@@ -10,7 +10,6 @@ class KmGridQuerySet(models.QuerySet):
     """Custom version manager for Grid."""
 
     def geometry_contains(self, geojson_geometry_string):
-        print(geojson_geometry_string)
         geometry = GEOSGeometry(
             "POINT({} {})".format(
                 geojson_geometry_string['coordinates'][0],
@@ -18,7 +17,6 @@ class KmGridQuerySet(models.QuerySet):
             ),
             srid=3857
         )
-        print(geometry)
         return self.filter(
             geometry__contains=geometry
         )

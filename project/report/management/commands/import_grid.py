@@ -34,7 +34,8 @@ class Command(BaseCommand):
             if options['file']:
                 file_loc = os.path.abspath(options['file'])
                 import_grid_from_geojson(file_loc)
-
+            else:
+                print('Please specify file location!')
         except Exception as e:
             print(e)
 
