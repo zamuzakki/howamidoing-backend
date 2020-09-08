@@ -4,13 +4,16 @@ from nose.tools import eq_
 from rest_framework.test import APITestCase
 from rest_framework import status as http_status
 from faker import Faker
+
 from project.report.models.km_grid import KmGrid
 from project.users.test.factories import UserAdminFactory
 from project.report.management.commands.import_grid import read_local_file, check_json_loadable, \
     check_geojson_loadable, check_path_exist_and_is_file, import_grid_from_geojson
 from project.report.management.commands.generate_grid_score import generate_grid_score
+
 import io
 import json
+
 
 fake = Faker()
 
@@ -36,7 +39,7 @@ class TestKmGridImport(APITestCase):
             "crs": {
                 "type": "name",
                 "properties": {
-                    "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+                    "name": "urn:ogc:def:crs:EPSG::3857"
                 }
             },
             "type": "FeatureCollection",
@@ -50,11 +53,11 @@ class TestKmGridImport(APITestCase):
                         "type": "Polygon",
                         "coordinates": [
                             [
-                                [18.40417142576775, -33.922105319969859],
-                                [18.413154578608943, -33.922105319969859],
-                                [18.413154578608943, -33.929559187481644],
-                                [18.40417142576775, -33.929559187481644],
-                                [18.40417142576775, -33.922105319969859]
+                                [12536500.0, -803500.0],
+                                [12536500.0, -802500.0],
+                                [12537500.0, -802500.0],
+                                [12537500.0, -803500.0],
+                                [12536500.0, -803500.0]
                             ]
                         ]
                     }
@@ -194,7 +197,7 @@ class TestKmGridImport(APITestCase):
         Test Import KmGrid page can be opened in admin page.
         """
         self.login()
-        response = self.client.get('/admin/report/kmgrid/import-geojson/', follow=True)
+        response = self.client.get('/v2/admin/report/kmgrid/import-geojson/', follow=True)
         eq_(response.status_code, http_status.HTTP_200_OK)
 
     def test_url_to_import_kmgrid_function_valid_file(self):
@@ -204,7 +207,7 @@ class TestKmGridImport(APITestCase):
         self.login()
         with open(self.valid_file_path) as fp:
             response = self.client.post(
-                '/admin/report/kmgrid/import-geojson/',
+                '/v2/admin/report/kmgrid/import-geojson/',
                 {'file': fp},
                 follow=True
             )
@@ -226,7 +229,7 @@ class TestKmGridImport(APITestCase):
         self.login()
         with open(self.valid_path_invalid_json) as fp:
             response = self.client.post(
-                '/admin/report/kmgrid/import-geojson/',
+                '/v2/admin/report/kmgrid/import-geojson/',
                 {'file': fp},
                 follow=True
             )

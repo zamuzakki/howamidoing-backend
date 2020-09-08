@@ -1,6 +1,6 @@
 from django.test import TestCase
 from nose.tools import eq_
-from ..utils.scoring_grid import color_score_km_grid, status_score_km_grid
+from project.report.utils.scoring_grid import color_score_km_grid, status_score_km_grid
 
 
 class TestScoringGrid(TestCase):

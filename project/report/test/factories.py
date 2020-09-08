@@ -1,5 +1,5 @@
 from django.contrib.gis.geos.point import Point
-from django.contrib.gis.geos import fromstr
+from django.contrib.gis.geos import Polygon
 from faker.providers import BaseProvider
 from ..utils.scoring_grid import color_score_km_grid, status_score_km_grid
 import factory
@@ -33,7 +33,15 @@ def get_grid_from_file(index=0):
     with open(settings.BASE_DIR + '/../example/grid.geojson', 'r') as f:
         content = f.read()
         data = json.loads(content)['features']
-        return fromstr(json.dumps(data[index]['geometry']))
+        grid = data[index]['geometry']
+        geom = Polygon((
+            (grid['coordinates'][0][0][0], grid['coordinates'][0][0][1]),
+            (grid['coordinates'][0][1][0], grid['coordinates'][0][1][1]),
+            (grid['coordinates'][0][2][0], grid['coordinates'][0][2][1]),
+            (grid['coordinates'][0][3][0], grid['coordinates'][0][3][1]),
+            (grid['coordinates'][0][4][0], grid['coordinates'][0][4][1]),
+        ), srid=3857)
+        return geom
 
 
 class KmGridFactory(factory.django.DjangoModelFactory):

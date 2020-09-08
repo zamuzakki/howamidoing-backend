@@ -1,11 +1,12 @@
+from nose.tools import eq_, ok_
+
 from django.test import TestCase
 from django.forms.models import model_to_dict
 from django.contrib.gis.db.models.functions import Centroid
-from ..models.km_grid import KmGrid
-from nose.tools import eq_, ok_
-from .factories import StatusFactory, ReportFactory, UserFactory
-from ..serializers import StatusSerializer, ReportSerializer, \
-    ReportCreateSerializer, KmGridSerializer, KmGridScoreSerializer, UserSerializer
+from project.report.models.km_grid import KmGrid
+from project.report.test.factories import StatusFactory, ReportFactory, UserFactory
+from project.report.serializers import StatusSerializer, ReportSerializer, \
+    ReportCreateSerializer, UserSerializer
 
 class TestUserSerializer(TestCase):
     def setUp(self):
@@ -14,6 +15,7 @@ class TestUserSerializer(TestCase):
     def test_serializer_with_empty_data(self):
         serializer = UserSerializer(data={})
         eq_(serializer.is_valid(), True)
+
 
 class TestStatusSerializer(TestCase):
 
@@ -27,6 +29,7 @@ class TestStatusSerializer(TestCase):
     def test_serializer_with_valid_data(self):
         serializer = StatusSerializer(data=self.status_data)
         ok_(serializer.is_valid(), True)
+
 
 class TestReportSerializer(TestCase):
 
@@ -68,70 +71,4 @@ class TestReportSerializer(TestCase):
 
     def test_create_serializer_with_data(self):
         serializer = ReportCreateSerializer(data=self.report_create_data_json)
-        eq_(serializer.is_valid(), True)
-
-
-class TestKmGridSerializer(TestCase):
-
-    def setUp(self):
-        self.data = {
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [18.40417142576775, -33.922105319969859],
-                        [18.413154578608943, -33.922105319969859],
-                        [18.413154578608943, -33.929559187481644],
-                        [18.40417142576775, -33.929559187481644],
-                        [18.40417142576775, -33.922105319969859]
-                    ]
-                ]
-            },
-            "population": 1
-        }
-
-    def test_serializer_with_valid_data(self):
-        serializer = KmGridSerializer(data=self.data)
-        eq_(serializer.is_valid(), True)
-
-
-class TestKmGridScoreSerializer(TestCase):
-
-    def setUp(self):
-        self.data = {
-            "type": "Feature",
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [
-                            18.40417142576775,
-                            -33.92210531996986
-                        ],
-                        [
-                            18.413154578608943,
-                            -33.92210531996986
-                        ],
-                        [
-                            18.413154578608943,
-                            -33.929559187481644
-                        ],
-                        [
-                            18.40417142576775,
-                            -33.929559187481644
-                        ],
-                        [
-                            18.40417142576775,
-                            -33.92210531996986
-                        ]
-                    ]
-                ]
-            },
-            "properties": {
-                "total_score": "0.00"
-            }
-        }
-
-    def test_serializer_with_valid_data(self):
-        serializer = KmGridScoreSerializer(data=self.data)
         eq_(serializer.is_valid(), True)
